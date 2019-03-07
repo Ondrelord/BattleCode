@@ -64,6 +64,8 @@ public class Lumberjack extends Robot{
     			 Direction dir =Robot.randomDirection();
     			 if (bot.rc.canMove(dir))
     			 {
+    				 bot.state=bot.findTreeS;
+    				 bot.findTreeS.deadTreeCount=0;
     				 holdCounter=0;
     				 bot.rc.move(dir);
     				 return;
