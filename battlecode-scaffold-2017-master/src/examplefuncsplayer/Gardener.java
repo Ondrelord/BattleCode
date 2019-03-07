@@ -5,11 +5,14 @@ import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
+import battlecode.common.RobotType;
 import battlecode.common.Team;
 import battlecode.common.TreeInfo;
 
 public class Gardener extends Robot{
 
+	private int soldierCount = 0;
+	
 	public Gardener(RobotController rc) {
 		super(rc);
 	}
@@ -26,7 +29,17 @@ public class Gardener extends Robot{
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try 
             {
-            	switch(state)
+            	
+            	Direction dir = randomDirection();
+                if (soldierCount < 2 && rc.canBuildRobot(RobotType.SOLDIER, dir)) 
+                {
+                    rc.buildRobot(RobotType.SOLDIER, dir);
+                    System.out.println("Building a soldier.");
+                    soldierCount++;
+                }
+                
+            	
+            	/*switch(state)
             	{
             	case 0:
             		System.out.println("State 0: Finding good location");
@@ -57,7 +70,7 @@ public class Gardener extends Robot{
             	default:
             		break;
             	
-            	}
+            	}*/
             	
             	
             	/*

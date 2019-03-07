@@ -2,10 +2,13 @@ package examplefuncsplayer;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
+import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 
 public class Archon extends Robot {
+	
+	public static final int SOLDIER_FIELDS_DECREASE_PERIOD = 5;
 
 	public Archon(RobotController rc) {
 		super(rc);
@@ -17,9 +20,14 @@ public class Archon extends Robot {
         // The code you want your robot to perform every round should be in this loop
         while (true) 
         {
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+        	// Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try 
             {
+            	// We decrease soldier fields each 6 seconds
+            	if (rc.getRoundNum() % SOLDIER_FIELDS_DECREASE_PERIOD == 0) {
+            		annulateSoldierFields();
+            	}
+            	
                 // Generate a random direction
                 Direction dir = randomDirection();
 
@@ -50,6 +58,13 @@ public class Archon extends Robot {
             }
         }
 		
+	}
+
+	private void annulateSoldierFields() throws GameActionException {
+		for (int i = BroadcastManager.SOLDIER_FIELDS_START; i < BroadcastManager.SOLDIER_FIELDS_END; i++) {
+			//int number = rc.readBroadcast(i);
+			rc.broadcast(i, 0);
+		}	
 	}
 
 }

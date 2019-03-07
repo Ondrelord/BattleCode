@@ -21,7 +21,9 @@ public class Lumberjack extends Robot{
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
-
+        	
+        	System.out.println("Lumberjack here.");
+        	
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
 
