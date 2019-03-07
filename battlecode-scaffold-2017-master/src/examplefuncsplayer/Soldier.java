@@ -2,6 +2,7 @@ package examplefuncsplayer;
 
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;
+import battlecode.common.Direction;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
@@ -60,22 +61,41 @@ public class Soldier extends Robot{
                 // Update the group's target
                 
                 MapLocation myLocation = rc.getLocation();
-                
-                
-                // Get nearby robots
-                RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, enemyTeam);
-                                
- 
-                if (nearbyEnemyRobots.length > 0) {
-                    // And we have enough bullets, and haven't attacked yet this turn...
-                    if (rc.canFireSingleShot()) {
-                        // ...Then fire a bullet in the direction of the enemy.
-                        rc.fireSingleShot(rc.getLocation().directionTo(nearbyEnemyRobots[0].location));
-                    }
+
+                // See if there are any nearby enemy robots
+                RobotInfo[] robots = rc.senseNearbyRobots(-1, enemyTeam);
+
+                // If there are some...
+                if (robots.length > 0) 
+                {
+	            	MapLocation enemyLocation = robots[0].getLocation();
+	            	Direction toEnemy = myLocation.directionTo(enemyLocation);
+	            	
+	            	rc.broadcastFloat(3, enemyLocation.x);
+	            	rc.broadcastFloat(4, enemyLocation.y);
+	            	
+	            	if(!rc.hasMoved())
+	            		tryMove(toEnemy);
+	            	
+	                // And we have enough bullets, and haven't attacked yet this turn...
+	                if (rc.canFireSingleShot()) 
+	                {
+	                    // ...Then fire a bullet in the direction of the enemy.
+	                    rc.fireSingleShot(rc.getLocation().directionTo(robots[0].location));
+	                }
+                }
+                else
+                {
+                	MapLocation enemyLocation = new MapLocation(rc.readBroadcastFloat(3), rc.readBroadcastFloat(4));
+                	Direction toEnemy = myLocation.directionTo(enemyLocation);
+                	
+                	if(!rc.hasMoved())
+                		tryMove(toEnemy);
                 }
 
                 // Move randomly
-                tryMove(randomDirection());
+                if(!rc.hasMoved())
+                	tryMove(randomDirection());
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();

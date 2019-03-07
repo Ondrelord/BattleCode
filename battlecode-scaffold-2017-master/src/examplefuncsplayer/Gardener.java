@@ -9,19 +9,36 @@ import battlecode.common.RobotType;
 import battlecode.common.Team;
 import battlecode.common.TreeInfo;
 
-public class Gardener extends Robot{
-
-	private int soldierCount = 0;
+public class Gardener extends Robot
+{
+	static RobotController rc;
 	
-	public Gardener(RobotController rc) {
+	static MapLocation enemy;
+    static MapLocation ally;
+    static MapLocation myLocation;
+    static Direction spawnDir;
+    static Boolean spawnDirSet = false;
+    
+    private int soldierCount = 0;
+	
+	
+	public Gardener(RobotController rc) 
+	{
 		super(rc);
+		this.rc = rc;
+		enemy = rc.getInitialArchonLocations(rc.getTeam().opponent())[0];
+	    ally = rc.getInitialArchonLocations(rc.getTeam())[0];
+	    myLocation = rc.getLocation();
+	    spawnDir = myLocation.directionTo(enemy);
+	    
 	}
 
 	@Override
-	public void run() {
+	public void run() 
+	{
 		int state = 0;
-        MapLocation base = null;
-        float plantOffset = (float) (Math.PI/3);
+        int initMovement = 10;
+        //float plantOffset = (float) (Math.PI/3);
 
         // The code you want your robot to perform every round should be in this loop
         while (true) 
@@ -29,75 +46,33 @@ public class Gardener extends Robot{
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try 
             {
+            	myLocation = rc.getLocation();
             	
-            	Direction dir = randomDirection();
-                if (soldierCount < 2 && rc.canBuildRobot(RobotType.SOLDIER, dir)) 
-                {
-                    rc.buildRobot(RobotType.SOLDIER, dir);
-                    System.out.println("Building a soldier.");
-                    soldierCount++;
-                }
-                
+            	trySpawn();
             	
-            	/*switch(state)
+            	switch(state)
             	{
             	case 0:
-            		System.out.println("State 0: Finding good location");
-            		base = findLocation(rc.getLocation());
-            		if(base != null)
-            			state = 1;
+            		if (--initMovement > 0 && rc.canMove(myLocation.directionTo(enemy)))
+            			rc.move(myLocation.directionTo(enemy));
             		else
-            		{
-            			System.out.println("Location not found");
-            			if(!rc.hasMoved())
-            				tryMove(randomDirection());
-            		}
-            		break;
+            			state = 1;
             	case 1:
-            		System.out.println("State 1: Moving to location");
-            		if (base == null)
-            			break;
-            		if (rc.canMove(base))
-            			rc.move(base);
-            		if (rc.getLocation() == base)
+            		System.out.println("State 0: Finding good location");
+            		if (findLocation(myLocation))
             			state = 2;
             		break;
             	case 2:
             		System.out.println("State 2: Planting trees and taking care of");
             		plantTrees();
             		waterTrees();
+            		//if(spawnDir != null && Math.random() < 0.2f && rc.canBuildRobot(RobotType.SOLDIER, spawnDir))
+            			//rc.buildRobot(RobotType.SOLDIER, spawnDir);
             		break;
             	default:
             		break;
             	
-            	}*/
-            	
-            	
-            	/*
-                // Generate a random direction
-                Direction dir = randomDirection();
-                
-                if (rc.canPlantTree(dir))
-                {
-                	rc.plantTree(new Direction(plantOffset));
-                }
-                
-                
-                // Randomly attempt to build a soldier or lumberjack in this direction
-                if (rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < .01) 
-                {
-                    rc.buildRobot(RobotType.SOLDIER, dir);
-                } 
-                else if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && Math.random() < .01 && rc.isBuildReady()) 
-                {
-                    rc.buildRobot(RobotType.LUMBERJACK, dir);
-                }
-
-                // Move randomly
-                
-                if(rc.isCircleOccupiedExceptByThisRobot(rc.getLocation(), 3))
-                	tryMove(randomDirection());
-            	*/
+            	}
             	
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -109,10 +84,9 @@ public class Gardener extends Robot{
                 e.printStackTrace();
             }
         }
-		
-	}
+    }
 	
-	private void plantTrees()
+	public static void plantTrees()
 	{
 		try 
 		{
@@ -121,8 +95,17 @@ public class Gardener extends Robot{
 				Direction dir = new Direction((float) (i*2*Math.PI));
 	    		if (rc.canPlantTree(dir))
 	    		{
-	    			System.out.println("Planting trees");
-					rc.plantTree(dir);
+	    			if(Math.abs(dir.degreesBetween(myLocation.directionTo(enemy))) > 30)
+	    			{
+	    				System.out.println("Planting trees");
+	    				rc.plantTree(dir);
+	    			}
+	    			else if (!spawnDirSet)
+    				{
+	    				spawnDir = dir;
+	    				spawnDirSet = true;
+    				}
+	    				
 	    		}
 			}
 		}
@@ -132,13 +115,15 @@ public class Gardener extends Robot{
 		}
 	}
 	
-	private void waterTrees()
+	public static void waterTrees()
 	{
 		try 
 		{
 			TreeInfo treeToWater = null;
 			for(TreeInfo tree : rc.senseNearbyTrees(3))
 			{
+				if (tree == null)
+					return;
 				if(treeToWater == null)
 					treeToWater = tree;
 				else if (treeToWater.getHealth() > tree.getHealth())
@@ -153,108 +138,88 @@ public class Gardener extends Robot{
 		}
 	}
 	
-	private MapLocation findLocation(MapLocation center)
+	public static boolean findLocation(MapLocation center)
 	{
 		try
 		{
-			MapLocation path = null;
-			while (true)
-			{
-				if (!rc.isCircleOccupiedExceptByThisRobot(center, 5))
-					return center;
-				for(int i = 0; i < 1; i += 1.0f/6.0f)
-				{			
-					MapLocation loc = center.add((float)(i*2*Math.PI),6);
-					MapLocation enemy = rc.getInitialArchonLocations(rc.getTeam() == Team.A ? Team.A : Team.B)[0];
-					rc.setIndicatorDot(loc, 0, 255, 0);
-					if(!rc.isLocationOccupied(loc))
-					{
-						if (path == null)
-							path = loc;
-						else if (path.distanceTo(enemy) > loc.distanceTo(enemy))
+			MapLocation path = center;
+				if (!rc.isCircleOccupiedExceptByThisRobot(center, 5) && rc.onTheMap(center, 3))
+					return true;
+				if (Math.random() >= 0.3)
+				{
+					for(float i = 0; i < 1; i += Math.random()/2.0f)
+					{		
+						MapLocation loc = center.add((float)(i*2*Math.PI));
+						if(!rc.isLocationOccupied(loc))
 						{
-							path = loc;
+							float point = ally.distanceTo(enemy) - ((float)(rc.getRoundNum()))/((float)(rc.getRoundLimit())) * ally.distanceTo(enemy);
+							
+							if (Math.abs(path.distanceTo(enemy)-point) > Math.abs(loc.distanceTo(enemy)-point))
+							{
+								path = loc;
+							}
 						}
 					}
+					if(rc.canMove(center.directionTo(path)))
+						rc.move(center.directionTo(path));
 				}
-				tryMove(center.directionTo(path));
-			}
+				else
+				{
+					rc.setIndicatorLine(center, path, 255, 0, 0);
+					Direction dir = new Direction((float)Math.random() * 2 * (float)Math.PI);
+					if(rc.canMove(dir))
+						rc.move(dir);
+					//tryMove(Math.random() < 0.5 ? center.directionTo(enemy).rotateLeftDegrees(90) : center.directionTo(enemy).rotateRightDegrees(90));
+				}
 		}
 		catch (GameActionException e)
 		{
 			e.printStackTrace();
 		}
 		
-		
-		
-		
-		/*List<MapLocation> locations = new ArrayList<MapLocation>();
-		MapLocation loc, goal = center;
-		locations.add(center);
-		boolean foundOne = false;
-		
-		try 
-		{
-			while(locations.size() > 0)
-			{
-				foundOne = false;
-				loc = locations.get(0);
-				locations.remove(0);
-				rc.setIndicatorDot(loc, 0, 0, 255);
-				
-				if (rc.isCircleOccupiedExceptByThisRobot(loc, 5) || !rc.onTheMap(loc, 3) )
-				{
-					System.out.println("start: " + loc.x + " " + loc.y);
-					
-					
-					MapLocation newLoc;
-					for(float i = 1.0f/6.0f; i < 1; i += 1.0f/6.0f)
-					{
-						newLoc = loc.add((float) (i * Math.PI * 2));
-						try
-						{
-							System.out.println("try: " + newLoc.x + " " + newLoc.y);
-							if(rc.onTheMap(newLoc, 3) && !rc.isLocationOccupied(newLoc))
-							{
-								foundOne = true;
-								locations.add(newLoc);
-								 
-								if ()
-									goal = newLoc;
-							}
-						}
-						catch (GameActionException e) 
-						{
-							System.out.println("Circle not on Map");
-							e.printStackTrace();
-							if (!foundOne)
-								return null;
-							
-						}
-					}
-				}
-				else
-					return loc;
-			}
-		} 
-		catch (GameActionException e) 
-		{
-			System.out.println("Find Location Exception");
-			e.printStackTrace();
-			if (!foundOne)
-			{
-				System.out.println("goal");
-				rc.setIndicatorDot(goal, 0, 255, 0);
-				try {
-					tryMove(center.directionTo(goal));
-				} catch (GameActionException e1) {
-					e1.printStackTrace();
-				}
-			}
-		}
-		*/
-		return null;
+		return false;
 	}
  
-	
+	public static void trySpawn()
+	{
+		try 
+		{
+			if(rc.readBroadcast(BroadcastType.SpawnLumberjack.getChannel()) > 0)
+				if(spawnDir != null && rc.canBuildRobot(RobotType.LUMBERJACK, spawnDir))
+				{
+					rc.buildRobot(RobotType.LUMBERJACK, spawnDir);
+					rc.broadcast(BroadcastType.SpawnLumberjack.getChannel(), 
+							rc.readBroadcast(BroadcastType.SpawnLumberjack.getChannel()) - 1);
+				}
+    	
+	    	if(rc.readBroadcast(BroadcastType.SpawnSoldier.getChannel()) > 0)
+	    		if(spawnDir != null && rc.canBuildRobot(RobotType.SOLDIER, spawnDir))
+	    		{
+	    			rc.buildRobot(RobotType.SOLDIER, spawnDir);
+	    			rc.broadcast(BroadcastType.SpawnSoldier.getChannel(), 
+	    					rc.readBroadcast(BroadcastType.SpawnSoldier.getChannel()) - 1);
+	    		}
+	    	
+	    	if(rc.readBroadcast(BroadcastType.SpawnTank.getChannel()) > 0)
+	    		if(spawnDir != null && rc.canBuildRobot(RobotType.TANK, spawnDir))
+	    		{
+	    			rc.buildRobot(RobotType.TANK, spawnDir);
+	    			rc.broadcast(BroadcastType.SpawnTank.getChannel(), 
+	    					rc.readBroadcast(BroadcastType.SpawnTank.getChannel()) - 1);
+	    		}
+	    	
+	    	if(rc.readBroadcast(BroadcastType.SpawnScout.getChannel()) > 0)
+	    		if(spawnDir != null && rc.canBuildRobot(RobotType.SCOUT, spawnDir))
+	    		{
+	    			rc.buildRobot(RobotType.SCOUT, spawnDir);
+	    			rc.broadcast(BroadcastType.SpawnScout.getChannel(), 
+	    					rc.readBroadcast(BroadcastType.SpawnScout.getChannel()) - 1);
+	    		}
+		}
+		catch (GameActionException e) 
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 }

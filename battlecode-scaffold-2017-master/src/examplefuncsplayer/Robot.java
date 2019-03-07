@@ -22,6 +22,30 @@ public abstract class Robot {
 
 	// --------------------------
 	
+	public static enum BroadcastType
+	{
+		SpawnGardener   (10),
+		SpawnLumberjack (11),
+		SpawnSoldier	(12),
+		SpawnTank		(13),
+		SpawnScout		(14),
+		
+		;
+		
+		private final int channel;
+		
+		private BroadcastType(int channel)
+		{
+			this.channel = channel;
+		}
+		
+		public int getChannel()
+		{
+			return channel;
+		}
+	}
+	
+	
 	 /**
      * Returns a random Direction
      * @return a random Direction
