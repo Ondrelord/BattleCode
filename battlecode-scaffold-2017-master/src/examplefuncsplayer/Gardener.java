@@ -11,7 +11,7 @@ import battlecode.common.TreeInfo;
 
 public class Gardener extends Robot
 {
-	
+	static int state = 0;
 	static MapLocation enemy;
     static MapLocation ally;
     static MapLocation myLocation;
@@ -34,7 +34,6 @@ public class Gardener extends Robot
 	@Override
 	public void run() 
 	{
-		int state = 0;
         int initMovement = 10;
         //float plantOffset = (float) (Math.PI/3);
 
@@ -139,8 +138,22 @@ public class Gardener extends Robot
 		try
 		{
 			MapLocation path = center;
-				if (!rc.isCircleOccupiedExceptByThisRobot(center, 5) && rc.onTheMap(center, 3))
+				if (!rc.isCircleOccupiedExceptByThisRobot(center, 3) && rc.onTheMap(center, 3))
 					return true;
+				else
+				{
+					for(TreeInfo tree : rc.senseNearbyTrees(3, Team.NEUTRAL))
+					{
+						if (tree != null)
+						{
+							Direction dir = randomDirection();
+							if(rc.canBuildRobot(RobotType.LUMBERJACK, dir))
+							{
+								rc.buildRobot(RobotType.LUMBERJACK, dir);
+							}
+						}
+					}
+				}
 				if (Math.random() >= 0.3)
 				{
 					for(float i = 0; i < 1; i += Math.random()/2.0f)
@@ -177,6 +190,9 @@ public class Gardener extends Robot
 	{
 		try 
 		{
+			if(state < 2)
+				return;
+			
 			if(rc.readBroadcast(BroadcastType.SpawnLumberjack.getChannel()) > 0)
 				if(spawnDir != null && rc.canBuildRobot(RobotType.LUMBERJACK, spawnDir))
 				{

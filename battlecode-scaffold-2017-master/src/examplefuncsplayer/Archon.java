@@ -98,6 +98,9 @@ public class Archon extends Robot
                 if(rc.getRoundNum() % 10 == 1)
                 	rc.broadcast(BroadcastType.SpawnSoldier.getChannel(), 
                 			rc.readBroadcast(BroadcastType.SpawnSoldier.getChannel()) + 1);
+                
+                if(rc.getTeamBullets() > 500)
+                	rc.donate(rc.getVictoryPointCost());
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
