@@ -11,7 +11,6 @@ import battlecode.common.TreeInfo;
 
 public class Gardener extends Robot
 {
-	static RobotController rc;
 	
 	static MapLocation enemy;
     static MapLocation ally;
@@ -25,7 +24,6 @@ public class Gardener extends Robot
 	public Gardener(RobotController rc) 
 	{
 		super(rc);
-		this.rc = rc;
 		enemy = rc.getInitialArchonLocations(rc.getTeam().opponent())[0];
 	    ally = rc.getInitialArchonLocations(rc.getTeam())[0];
 	    myLocation = rc.getLocation();
@@ -53,8 +51,8 @@ public class Gardener extends Robot
             	switch(state)
             	{
             	case 0:
-            		if (--initMovement > 0 && rc.canMove(myLocation.directionTo(enemy)))
-            			rc.move(myLocation.directionTo(enemy));
+            		if (--initMovement > 0)
+            			tryMove(myLocation.directionTo(enemy));
             		else
             			state = 1;
             	case 1:
@@ -66,8 +64,6 @@ public class Gardener extends Robot
             		System.out.println("State 2: Planting trees and taking care of");
             		plantTrees();
             		waterTrees();
-            		//if(spawnDir != null && Math.random() < 0.2f && rc.canBuildRobot(RobotType.SOLDIER, spawnDir))
-            			//rc.buildRobot(RobotType.SOLDIER, spawnDir);
             		break;
             	default:
             		break;
@@ -160,16 +156,13 @@ public class Gardener extends Robot
 							}
 						}
 					}
-					if(rc.canMove(center.directionTo(path)))
-						rc.move(center.directionTo(path));
+					tryMove(center.directionTo(path));
 				}
 				else
 				{
 					rc.setIndicatorLine(center, path, 255, 0, 0);
 					Direction dir = new Direction((float)Math.random() * 2 * (float)Math.PI);
-					if(rc.canMove(dir))
-						rc.move(dir);
-					//tryMove(Math.random() < 0.5 ? center.directionTo(enemy).rotateLeftDegrees(90) : center.directionTo(enemy).rotateRightDegrees(90));
+					tryMove(dir);
 				}
 		}
 		catch (GameActionException e)
@@ -190,35 +183,38 @@ public class Gardener extends Robot
 					rc.buildRobot(RobotType.LUMBERJACK, spawnDir);
 					rc.broadcast(BroadcastType.SpawnLumberjack.getChannel(), 
 							rc.readBroadcast(BroadcastType.SpawnLumberjack.getChannel()) - 1);
+					System.out.println("Spawning: Lumberjack");
 				}
     	
-	    	if(rc.readBroadcast(BroadcastType.SpawnSoldier.getChannel()) > 0)
-	    		if(spawnDir != null && rc.canBuildRobot(RobotType.SOLDIER, spawnDir))
+			if(rc.readBroadcast(BroadcastType.SpawnScout.getChannel()) > 0)
+	    		if(spawnDir != null && rc.canBuildRobot(RobotType.SCOUT, spawnDir))
 	    		{
-	    			rc.buildRobot(RobotType.SOLDIER, spawnDir);
-	    			rc.broadcast(BroadcastType.SpawnSoldier.getChannel(), 
-	    					rc.readBroadcast(BroadcastType.SpawnSoldier.getChannel()) - 1);
+	    			rc.buildRobot(RobotType.SCOUT, spawnDir);
+	    			rc.broadcast(BroadcastType.SpawnScout.getChannel(), 
+	    					rc.readBroadcast(BroadcastType.SpawnScout.getChannel()) - 1);
+	    			System.out.println("Spawning Scout");
 	    		}
-	    	
+			
 	    	if(rc.readBroadcast(BroadcastType.SpawnTank.getChannel()) > 0)
 	    		if(spawnDir != null && rc.canBuildRobot(RobotType.TANK, spawnDir))
 	    		{
 	    			rc.buildRobot(RobotType.TANK, spawnDir);
 	    			rc.broadcast(BroadcastType.SpawnTank.getChannel(), 
 	    					rc.readBroadcast(BroadcastType.SpawnTank.getChannel()) - 1);
+	    			System.out.println("Spawning: Tank");
 	    		}
 	    	
-	    	if(rc.readBroadcast(BroadcastType.SpawnScout.getChannel()) > 0)
-	    		if(spawnDir != null && rc.canBuildRobot(RobotType.SCOUT, spawnDir))
+	    	if(rc.readBroadcast(BroadcastType.SpawnSoldier.getChannel()) > 0)
+	    		if(spawnDir != null && rc.canBuildRobot(RobotType.SOLDIER, spawnDir))
 	    		{
-	    			rc.buildRobot(RobotType.SCOUT, spawnDir);
-	    			rc.broadcast(BroadcastType.SpawnScout.getChannel(), 
-	    					rc.readBroadcast(BroadcastType.SpawnScout.getChannel()) - 1);
-	    		}
+	    			rc.buildRobot(RobotType.SOLDIER, spawnDir);
+	    			rc.broadcast(BroadcastType.SpawnSoldier.getChannel(), 
+	    					rc.readBroadcast(BroadcastType.SpawnSoldier.getChannel()) - 1);
+	    			System.out.println("Spawning: Soldier");
+	    		}	    	
 		}
 		catch (GameActionException e) 
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

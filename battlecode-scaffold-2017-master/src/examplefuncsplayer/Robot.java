@@ -9,11 +9,11 @@ import battlecode.common.RobotInfo;
 
 public abstract class Robot {
 	
-	protected RobotController rc;
+	protected static RobotController rc;
 	
 	public Robot(RobotController rc) 
 	{
-		this.rc = rc;
+		Robot.rc = rc;
 	}
 	
 	// Runs the Robot
@@ -25,6 +25,17 @@ public abstract class Robot {
 	
 	public static enum BroadcastType
 	{
+		//Locations
+		AllyArchonLocationX		(0),
+		AllyArchonLocationY		(1),
+		EnemyArchonLocationX	(2),
+		EnemyArchonLocationY	(3),
+		AttackLocationX			(4),
+		AttackLocationY			(5),
+		RegroupLocationX		(6),
+		RegroupLocationY		(7),
+		
+		//Spawning Broadcast
 		SpawnGardener   (10),
 		SpawnLumberjack (11),
 		SpawnSoldier	(12),
@@ -51,7 +62,7 @@ public abstract class Robot {
      * Returns a random Direction
      * @return a random Direction
      */
-    protected Direction randomDirection() {
+    protected static Direction randomDirection() {
         return new Direction((float)Math.random() * 2 * (float)Math.PI);
     }
 
@@ -62,7 +73,7 @@ public abstract class Robot {
      * @return true if a move was performed
      * @throws GameActionException
      */
-    protected boolean tryMove(Direction dir) throws GameActionException {
+    protected static boolean tryMove(Direction dir) throws GameActionException {
         return tryMove(dir,20,3);
     }
 
@@ -75,7 +86,7 @@ public abstract class Robot {
      * @return true if a move was performed
      * @throws GameActionException
      */
-    protected boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+    protected static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
 
         // First, try intended direction
         if (rc.canMove(dir)) {
