@@ -24,9 +24,10 @@ public class Lumberjack extends Robot{
 	WalkState walkS = new WalkState(this);
     
     
-    
-    
-    
+	
+	private final int BroadcastTree =1000;
+	private final int BroadcastSender = 1001;
+	
      void moveToTree(TreeInfo t) throws GameActionException 
     {
     	if (t!=null)
@@ -65,11 +66,12 @@ public class Lumberjack extends Robot{
     	 private boolean inDanger() throws GameActionException
     	 {
     		 Team enemy = bot.rc.getTeam().opponent();
-    		    RobotInfo[] robots = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius+GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
+    		    RobotInfo[] robots = rc.senseNearbyRobots(GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
 
                 if(robots.length > 0 && !bot.rc.hasAttacked()) {
                     // Use strike() to hit all nearby robots!
                     bot.rc.strike();
+                    return true;
                 } else {
                     // No close robots, so search for robots within sight radius
                     robots = rc.senseNearbyRobots(-1,enemy);
@@ -120,9 +122,7 @@ public class Lumberjack extends Robot{
 		public GoBackState(Lumberjack bot) {
 			super(bot);
 			MapLocation botLoc= bot.rc.getLocation();
-			initLoc = botLoc.add(0);
-			
-			
+			initLoc = botLoc.add(0);			
 		}
     	
 		@Override
@@ -148,7 +148,6 @@ public class Lumberjack extends Robot{
      
      class WalkState extends State
      {
-
 		public WalkState(Lumberjack bot) {
 			super(bot);
 		}
@@ -196,12 +195,25 @@ public class Lumberjack extends Robot{
     	    	}
     	    	return trees[minIndex];
     	    }
+    	 private final int halfInt = 16;
     	 
     	 private boolean SearchTree(TreeInfo[] trees) throws GameActionException
     	 {		
         		if (trees.length>0)
         		{
         			TreeInfo closestT = selectMinTree(trees);
+        			
+                	if (trees.length>3)
+                	{
+                		MapLocation loc = bot.rc.getLocation();
+                		bot.rc.broadcast(BroadcastSender, bot.rc.getID());
+                		bot.rc.broadcast(BroadcastTree, ((((int)loc.x) << halfInt) + (int)loc.y));
+        				
+                	}
+                	else if (bot.rc.readBroadcast(BroadcastSender)==bot.rc.getID())
+                		bot.rc.broadcast(BroadcastSender, 0);
+            		              		
+        			
         			if (rc.canChop(closestT.ID))
         				{
         	    		 	deadTreeCount+=1;
@@ -230,17 +242,40 @@ public class Lumberjack extends Robot{
 		 	Team enemy = rc.getTeam().opponent();
         	
         	TreeInfo[] enemyTrees = rc.senseNearbyTrees(-1, enemy);
+
         	if (SearchTree(enemyTrees))
-        		return;
-        	
+        		return;       	
         	
         	TreeInfo[] neutralTrees = rc.senseNearbyTrees(-1,Team.NEUTRAL);
     		if (SearchTree(neutralTrees))
     			return;
-    		        		
+    		
+    		if (bot.rc.readBroadcast(BroadcastSender)!=0 || treePlace!=null)
+    		{
+    			if (treePlace == null)
+    			{
+    				int intLoc = bot.rc.readBroadcast(BroadcastTree);
+    				System.out.println("recieved: " +intLoc);
+    				MapLocation loc = new MapLocation(intLoc>>>halfInt, (intLoc <<halfInt)>>>halfInt);
+    				treePlace = loc;
+    			}
+    			
+    			if (treePlace.distanceSquaredTo(bot.rc.getLocation())>=16)
+    				{
+    					if (bot.rc.canMove(treePlace))
+    					{
+    						bot.rc.move(treePlace);
+    						return;
+    					}
+    				}
+    			treePlace = null;
+    		}
+    		
             bot.state= bot.walkS;
             bot.walkS.StepCounter=0;
     	 }
+    	 
+    	 MapLocation treePlace;
     	 
     	 public int deadTreeCount = 0;
      }
