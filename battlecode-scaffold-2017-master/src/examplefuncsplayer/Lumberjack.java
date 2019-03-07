@@ -55,6 +55,21 @@ public class Lumberjack extends Robot{
     	 {
     		 if (inDanger()) 
     			 return;
+    		 if (bot.rc.getLocation().equals(lastLoc))
+    			 holdCounter++;
+    		 else
+    			 lastLoc = bot.rc.getLocation();
+    		 if (holdCounter>20)
+    		 {
+    			 Direction dir =Robot.randomDirection();
+    			 if (bot.rc.canMove(dir))
+    			 {
+    				 holdCounter=0;
+    				 bot.rc.move(dir);
+    				 return;
+    			 } 			
+    			 
+    		 }
     		 SubStep();		 
     	 }
     	 
@@ -62,6 +77,7 @@ public class Lumberjack extends Robot{
     	 public State(Lumberjack bot)
     	 {
     		 this.bot=bot;
+    		 lastLoc = bot.rc.getLocation();
     	 }
     	 private boolean inDanger() throws GameActionException
     	 {
@@ -91,6 +107,8 @@ public class Lumberjack extends Robot{
     	    	 
     	 protected abstract void SubStep() throws GameActionException;
     	 protected Lumberjack bot;
+    	 private MapLocation lastLoc;
+    	 private int holdCounter = 0;
      }
      
      class ChopState extends State 
