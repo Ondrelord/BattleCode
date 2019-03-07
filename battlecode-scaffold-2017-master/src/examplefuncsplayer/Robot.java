@@ -5,6 +5,7 @@ import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
+import battlecode.common.RobotInfo;
 
 public abstract class Robot {
 	
@@ -148,6 +149,42 @@ public abstract class Robot {
 
         return (perpendicularDist <= rc.getType().bodyRadius);
     }
+    
+    protected void broadcastAllNearbyEnemies() throws GameActionException {
+    	RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+    	
+    	if (nearbyRobots.length > 0) {
+    		int lastLocationIndex = 0;
+    		for (int i = 0; i < nearbyRobots.length; i++) {
+    			// Find empty location
+    			lastLocationIndex = findEmptyEnemiesLocation(lastLocationIndex);
+    			if (lastLocationIndex == -1) {
+    				// Locations are full, do nothing
+    				return;
+    			}
+    		}
+    	}
+    }
+
+	private int findEmptyEnemiesLocation(int lastLocationIndex) throws GameActionException {
+		int index = lastLocationIndex;
+		if (lastLocationIndex == 0) {
+			index = BroadcastManager.ENEMY_LOCATIONS_START;
+		}
+			
+		
+		
+		for (; index < BroadcastManager.ENEMY_LOCATIONS_END; index++) {
+			int location = rc.readBroadcast(index);
+			if (location == 0) { // empty
+				return index;
+			}
+		}
+		
+		return -1;
+	}
+    
+    
 	
 	
 }

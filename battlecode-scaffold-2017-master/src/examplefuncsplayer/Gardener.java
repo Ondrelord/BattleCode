@@ -17,6 +17,8 @@ public class Gardener extends Robot
     static MapLocation myLocation;
     static Direction spawnDir;
     static Boolean spawnDirSet = false;
+    
+    private int soldierCount = 0;
 	
 	
 	public Gardener(RobotController rc) 
