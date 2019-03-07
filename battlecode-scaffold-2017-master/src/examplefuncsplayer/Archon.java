@@ -4,6 +4,7 @@ import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
+import examplefuncsplayer.Robot.BroadcastType;
 
 public class Archon extends Robot 
 {
@@ -49,19 +50,26 @@ public class Archon extends Robot
                 MapLocation myLocation = rc.getLocation();
                 rc.broadcast(0,(int)myLocation.x);
                 rc.broadcast(1,(int)myLocation.y);
+                
                 if(rc.getRoundNum() % 100 == 1)
                 {
-                	rc.broadcastFloat(3, enemyLocation.x);
-                	rc.broadcastFloat(4, enemyLocation.y);
-                }
-                if(rc.getRoundNum() == 1)
-                {
-                	rc.broadcast(BroadcastType.SpawnGardener.getChannel(), 3);
-                	rc.broadcast(BroadcastType.SpawnLumberjack.getChannel(), 1);
+                	rc.broadcastFloat(BroadcastType.AttackLocationX.getChannel(), enemyLocation.x);
+                	rc.broadcastFloat(BroadcastType.AttackLocationY.getChannel(), enemyLocation.y);
                 }
                 
-                rc.broadcast(BroadcastType.SpawnSoldier.getChannel(), 
-                		rc.readBroadcast(BroadcastType.SpawnSoldier.getChannel()) + 1);
+                if(rc.getRoundNum() == 1)
+                {
+                	rc.broadcastFloat(BroadcastType.EnemyArchonLocationX.getChannel(), enemyLocation.x);
+                	rc.broadcastFloat(BroadcastType.EnemyArchonLocationY.getChannel(), enemyLocation.y);
+                	
+                	rc.broadcast(BroadcastType.SpawnGardener.getChannel(), 3);
+                	rc.broadcast(BroadcastType.SpawnLumberjack.getChannel(), 1);
+                	rc.broadcast(BroadcastType.SpawnScout.getChannel(), 1);
+                }
+                
+                if(rc.getRoundNum() % 10 == 1)
+                	rc.broadcast(BroadcastType.SpawnSoldier.getChannel(), 
+                			rc.readBroadcast(BroadcastType.SpawnSoldier.getChannel()) + 1);
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();

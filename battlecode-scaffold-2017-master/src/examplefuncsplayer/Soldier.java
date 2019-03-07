@@ -7,15 +7,17 @@ import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.Team;
 
-public class Soldier extends Robot{
+public class Soldier extends Robot
+{
 
-	public Soldier(RobotController rc) {
+	public Soldier(RobotController rc) 
+	{
 		super(rc);
-		
 	}
 
 	@Override
-	public void run() {
+	public void run() 
+	{
 		Team enemy = rc.getTeam().opponent();
 
         // The code you want your robot to perform every round should be in this loop
@@ -34,8 +36,8 @@ public class Soldier extends Robot{
 	            	MapLocation enemyLocation = robots[0].getLocation();
 	            	Direction toEnemy = myLocation.directionTo(enemyLocation);
 	            	
-	            	rc.broadcastFloat(3, enemyLocation.x);
-	            	rc.broadcastFloat(4, enemyLocation.y);
+	            	rc.broadcastFloat(BroadcastType.AttackLocationX.getChannel(), enemyLocation.x);
+	            	rc.broadcastFloat(BroadcastType.AttackLocationY.getChannel(), enemyLocation.y);
 	            	
 	            	if(!rc.hasMoved())
 	            		tryMove(toEnemy);
@@ -49,7 +51,8 @@ public class Soldier extends Robot{
                 }
                 else
                 {
-                	MapLocation enemyLocation = new MapLocation(rc.readBroadcastFloat(3), rc.readBroadcastFloat(4));
+                	MapLocation enemyLocation = new MapLocation(rc.readBroadcastFloat(BroadcastType.AttackLocationX.getChannel()),
+                													rc.readBroadcastFloat(BroadcastType.AttackLocationY.getChannel()));
                 	Direction toEnemy = myLocation.directionTo(enemyLocation);
                 	
                 	if(!rc.hasMoved())
