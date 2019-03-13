@@ -1,5 +1,7 @@
 package examplefuncsplayer;
 
+import java.util.Random;
+
 import battlecode.common.BulletInfo;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -218,4 +220,53 @@ public abstract class Robot {
 		// A move never happened, so return false.
 		return false;
 	}
+	
+	/*
+	 * Calls one lumberjack to the location. One lumberjack will be send per request. 
+	 * 
+	 * @param loc			The location where you need a lumberjack.
+	 * @param inNecessary	Is this request urgent or it is only hit where trees can be found.
+	 */
+	 protected void CallLumberjacks(MapLocation loc, boolean isNecessary) throws GameActionException
+	 { 		 
+		 int startIndex;
+		 if (isNecessary)
+			 startIndex=1000;
+		 else 
+			 startIndex =1200;
+		 
+		 
+		 for (int i = startIndex; i<startIndex+100;i+=2)
+		 {
+			 
+			 int id =rc.readBroadcastInt(i);
+			 if (id==0)
+			 {
+				rc.broadcast(i, rc.getID());
+				rc.broadcast(i+1, LocToInt(loc));
+				return ;
+			 }
+		 } 
+		 Random rnd = new Random();
+		 int index = startIndex+ 2*rnd.nextInt(100);
+		 rc.broadcast(index, rc.getID());
+		 rc.broadcast(index+1, LocToInt(loc));
+		 
+		 return;
+	 }
+	 
+	 protected int LocToInt(MapLocation loc)
+	 {
+		 return (((int)loc.x) << 16) + (int)loc.y;
+	 }
+	 
+	 
+	 protected MapLocation IntToLoc(int loc)
+	 {
+		return new MapLocation(loc>>>16, (loc <<16)>>>16);
+	 }
+	 
+	 
+
+	 
 }
