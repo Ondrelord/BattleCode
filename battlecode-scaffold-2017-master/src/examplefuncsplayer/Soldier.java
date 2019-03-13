@@ -178,20 +178,7 @@ public class Soldier extends Robot {
 		return null;
 	}
 
-	private MapLocation getBroadcastingEnemyLocation() throws GameActionException {
-		Random rnd = new Random();
-		int i = rnd.nextInt(
-				BroadcastType.BroadcastLocationsEnd.getChannel() - BroadcastType.BroadcastLocationsStart.getChannel());
-
-		int num = rc.readBroadcast(i);
-
-		if (num != 0) {
-			return BroadcastManager.unzipLocation(num);
-		} else {
-			return null;
-		}
-	}
-
+	
 	private int calculateTargetingIndex() {
 		return BroadcastType.SoldierTargetingStart.getChannel()
 				+ (groupIndex - BroadcastType.SoldierFieldsStart.getChannel());
