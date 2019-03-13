@@ -12,6 +12,7 @@ import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Team;
+import battlecode.common.TreeInfo;
 import examplefuncsplayer.Robot.BroadcastType;
 
 public class Soldier extends Robot {
@@ -21,6 +22,8 @@ public class Soldier extends Robot {
 	public static final int SOLDIER_FIELDS_INCREASE_PERIOD = 6;
 
 	private int groupIndex = -1;
+
+	private RobotInfo targetEnemy = null;
 
 	private MapLocation groupTarget = null;
 
@@ -66,7 +69,7 @@ public class Soldier extends Robot {
 
 					// Handle combat
 					handleCombat(nearbyRobots);
-					
+
 				} else {
 					if (groupTarget != null) {
 						// Check if I am on the target allready
@@ -199,9 +202,9 @@ public class Soldier extends Robot {
 
 	private boolean handleCombat(RobotInfo[] nearbyRobots) throws GameActionException {
 		boolean result = false;
-		
+
 		// Get the closest enemy
-		RobotInfo targetEnemy = getPrioritizedEnemy(nearbyRobots);
+		targetEnemy = getPrioritizedEnemy(nearbyRobots);
 		MapLocation enemyLocation = targetEnemy.getLocation();
 		Direction dirToTarget = myLocation.directionTo(enemyLocation);
 		RobotType enemyType = targetEnemy.getType();
@@ -214,8 +217,6 @@ public class Soldier extends Robot {
 			result = tryMove(dirToTarget);
 		}
 
-		
-		
 		// Try to shoot
 		if (rc.canFirePentadShot() && (enemyType == RobotType.SOLDIER || enemyType == RobotType.TANK)) {
 			rc.firePentadShot(dirToTarget);
@@ -224,7 +225,7 @@ public class Soldier extends Robot {
 		} else if (rc.canFireSingleShot()) {
 			rc.fireSingleShot(dirToTarget);
 		}
-		
+
 		return result;
 	}
 
@@ -299,7 +300,6 @@ public class Soldier extends Robot {
 						.abs((yDiff * targetLoc.x) - (xDiff * targetLoc.y) + (p2.x * p1.y) - (p2.y * p1.x))
 						/ Math.sqrt((yDiff * yDiff) + (xDiff * xDiff)));
 
-				
 				Direction dir;
 				if (bulletDir.degreesBetween(p1.directionTo(targetLoc)) > 0) {
 					dir = bulletDir.rotateLeftDegrees(90);
@@ -308,7 +308,7 @@ public class Soldier extends Robot {
 				}
 
 				distance = Math.max(0, rc.getType().bodyRadius - distance);
-				
+
 				targetLoc = targetLoc.add(dir, distance);
 			}
 		}
@@ -327,14 +327,60 @@ public class Soldier extends Robot {
 			}
 		}
 
+		// Not dodging
+		if (targetLoc.equals(myLocation)) {
+			// Check if there is a tree blocking the view of a target enemy
+			TreeInfo[] nearbyTrees = rc.senseNearbyTrees(MAX_SENSE_RANGE);
+			if (nearbyTrees.length > 0) {
+				TreeInfo closestTree = nearbyTrees[0];
+				MapLocation closestTreeLocation = closestTree.getLocation();
+
+				// If tree blocks the projectiles, move to the closer end
+				if (intersects(myLocation, targetEnemy.getLocation(), closestTree.getLocation(),
+						closestTree.getRadius())) {
+
+					Direction toLeft = myLocation.directionTo(closestTreeLocation).rotateLeftDegrees(90);
+					Direction toRight = myLocation.directionTo(closestTreeLocation).rotateRightDegrees(90);
+
+					if (closestTreeLocation.add(toRight).distanceTo(myLocation) < closestTreeLocation.add(toLeft)
+							.distanceTo(myLocation)) {
+						// Move to the right
+						return tryMove(myLocation.add(toRight, rc.getType().strideRadius), 10, 17);
+
+					} else {
+						return tryMove(myLocation.add(toLeft, rc.getType().strideRadius), 10, 17);
+					}
+				}
+			}
+		}
+
 		// Only move if there's actually stuff to dodge.
 		if (!targetLoc.equals(myLocation)) {
-			rc.setIndicatorLine(myLocation, targetLoc, 0, 0, 0);
-			rc.setIndicatorDot(myLocation, 255, 0, 0);
 			return tryMove(targetLoc, 10, 17);
 		}
-		
+
 		return false;
+	}
+
+	public static boolean intersects(MapLocation pointA, MapLocation pointB, MapLocation center, double radius) {
+		double baX = pointB.x - pointA.x;
+		double baY = pointB.y - pointA.y;
+		double caX = center.x - pointA.x;
+		double caY = center.y - pointA.y;
+
+		double a = baX * baX + baY * baY;
+		double bBy2 = baX * caX + baY * caY;
+		double c = caX * caX + caY * caY - radius * radius;
+
+		double pBy2 = bBy2 / a;
+		double q = c / a;
+
+		double disc = pBy2 * pBy2 - q;
+		if (disc < 0) {
+			return false;
+		}
+
+		return true;
 	}
 
 	private void increaseSoldierField() throws GameActionException {

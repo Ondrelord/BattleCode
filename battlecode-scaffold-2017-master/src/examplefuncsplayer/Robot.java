@@ -6,13 +6,14 @@ import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
+import battlecode.common.RobotType;
 
 public abstract class Robot {
 
-	protected static RobotController rc;
+	protected RobotController rc;
 
 	public Robot(RobotController rc) {
-		Robot.rc = rc;
+		this.rc = rc;
 	}
 
 	// Runs the Robot
@@ -22,19 +23,37 @@ public abstract class Robot {
 
 	public static enum BroadcastType {
 		// Locations
-		AllyArchonLocationX(0), AllyArchonLocationY(1), EnemyArchonLocationX(2), EnemyArchonLocationY(3),
-		AttackLocationX(4), AttackLocationY(5), RegroupLocationX(6), RegroupLocationY(7),
+		AllyArchonLocationX(0),
+		AllyArchonLocationY(1),
+		EnemyArchonLocationX(2),
+		EnemyArchonLocationY(3),
+		AttackLocationX(4), 
+		AttackLocationY(5),
+		RegroupLocationX(6),
+		RegroupLocationY(7),
 
 		// Spawning Broadcast
-		SpawnGardener(10), SpawnLumberjack(11), SpawnSoldier(12), SpawnTank(13), SpawnScout(14),
+		SpawnGardener(10),
+		SpawnLumberjack(11),
+		SpawnSoldier(12),
+		SpawnTank(13),
+		SpawnScout(14),
+		SpawnSoldierRush(15),
 
 		// Soldiers
-		SoldierFieldsStart(501), SoldierFieldsEnd(600), SoldierAdvertisingField(500), SoldierTargetingStart(601),
+		SoldierFieldsStart(501),
+		SoldierFieldsEnd(600),
+		SoldierAdvertisingField(500),
+		SoldierTargetingStart(601),
 		SoldierTargetingEnd(700),
 
 		// Enemy locations
 
-		EnemyLocationsStart(401), EnemyLocationsEnd(449), BroadcastLocationsStart(450), BroadcastLocationsEnd(499);
+		EnemyLocationsStart(401),
+		EnemyLocationsEnd(449),
+		BroadcastLocationsStart(450),
+		BroadcastLocationsEnd(499),
+		EnemyArchonLocationSingle(400);
 
 		private final int channel;
 
@@ -47,6 +66,13 @@ public abstract class Robot {
 		}
 	}
 
+	protected void checkForArchon(RobotInfo rb) throws GameActionException {
+		if (rb.getType() == RobotType.ARCHON) {
+			rc.broadcast(BroadcastType.EnemyArchonLocationSingle.getChannel(), BroadcastManager.zipLocation(rb.getLocation()));
+		}
+		
+	}
+	
 	/**
 	 * Returns a random Direction
 	 * 
@@ -64,11 +90,9 @@ public abstract class Robot {
 	 * @return true if a move was performed
 	 * @throws GameActionException
 	 */
-	protected static boolean tryMove(Direction dir) throws GameActionException {
+	protected boolean tryMove(Direction dir) throws GameActionException {
 		return tryMove(dir, 20, 3);
 	}
-
-	
 
 	/**
 	 * A slightly more complicated example function, this returns true if the given
@@ -115,6 +139,10 @@ public abstract class Robot {
 		if (nearbyRobots.length > 0) {
 			int lastLocationIndex = 0;
 			for (int i = 0; i < nearbyRobots.length; i++) {
+				// Check if it isn't an archon and share it's location if it is.
+				checkForArchon(nearbyRobots[i]);
+				
+				
 				// Find empty location
 				lastLocationIndex = findEmptyEnemiesLocation(lastLocationIndex);
 
@@ -155,7 +183,7 @@ public abstract class Robot {
 	 * @return true if a move was performed
 	 * @throws GameActionException
 	 */
-	protected static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+	protected boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
 
 		// First, try intended direction
 		if (rc.canMove(dir)) {
@@ -185,7 +213,7 @@ public abstract class Robot {
 		// A move never happened, so return false.
 		return false;
 	}
-	
+
 	protected boolean tryMove(MapLocation loc, float degreeOffset, int checksPerSide) throws GameActionException {
 
 		// First, try intended direction
