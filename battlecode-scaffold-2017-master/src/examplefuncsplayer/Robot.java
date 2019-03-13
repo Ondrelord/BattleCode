@@ -8,6 +8,7 @@ import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
+import examplefuncsplayer.Robot.BroadcastType;
 
 public abstract class Robot {
 
@@ -145,6 +146,20 @@ public abstract class Robot {
 
 		return -1;
 	}
+	protected MapLocation getBroadcastingEnemyLocation() throws GameActionException {
+		Random rnd = new Random();
+		int i = rnd.nextInt(
+				BroadcastType.BroadcastLocationsEnd.getChannel() - BroadcastType.BroadcastLocationsStart.getChannel());
+
+		int num = rc.readBroadcast(i);
+
+		if (num != 0) {
+			return BroadcastManager.unzipLocation(num);
+		} else {
+			return null;
+		}
+	}
+
 
 	/**
 	 * Attempts to move in a given direction, while avoiding small obstacles
@@ -233,24 +248,22 @@ public abstract class Robot {
 		 if (isNecessary)
 			 startIndex=1000;
 		 else 
-			 startIndex =1200;
+			 startIndex =1100;
 		 
 		 
-		 for (int i = startIndex; i<startIndex+100;i+=2)
+		 for (int i = startIndex; i<startIndex+100;i++)
 		 {
 			 
-			 int id =rc.readBroadcastInt(i);
-			 if (id==0)
+			 int intLoc =rc.readBroadcastInt(i);
+			 if (intLoc==0)
 			 {
-				rc.broadcast(i, rc.getID());
-				rc.broadcast(i+1, LocToInt(loc));
+				rc.broadcast(i, LocToInt(loc));
 				return ;
 			 }
 		 } 
 		 Random rnd = new Random();
-		 int index = startIndex+ 2*rnd.nextInt(100);
-		 rc.broadcast(index, rc.getID());
-		 rc.broadcast(index+1, LocToInt(loc));
+		 int index = startIndex+ rnd.nextInt(100);
+		 rc.broadcast(index, LocToInt(loc));
 		 
 		 return;
 	 }
