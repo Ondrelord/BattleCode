@@ -267,12 +267,7 @@ public class Lumberjack extends Robot{
     	 }
     	 
     	 
-    	 protected void CallOffLumberjacks(int channel) throws GameActionException
-    	 {
-    		 int id = bot.rc.readBroadcast(channel);
-    		 if (id==bot.rc.getID())
-    			 bot.rc.broadcast(channel, 0);
-    	 }
+ 
     	 
     	 private MapLocation AnswerToCall(int startIndex) throws GameActionException
     	 {
@@ -337,12 +332,14 @@ public class Lumberjack extends Robot{
     		if (SearchTree(neutralTrees))
     			return;
     		
-    		if (bot.rc.readBroadcast(BroadcastSender)!=0 || treePlace!=null)
+    		
+    		if (treePlace == null)
+    			treePlace = bot.AnswerToCall(1200);
+    		
+    		
+    		if ( treePlace!=null)
     		{
-    			if (treePlace == null)
-    			{
-    				treePlace = AnswerToCall(1200);
-    			}
+
     			
     			if (treePlace.distanceSquaredTo(bot.rc.getLocation())>=16)
     				{
