@@ -42,6 +42,19 @@ public abstract class Robot {
 		SpawnTank		(13),
 		SpawnScout		(14),
 		
+		// Soldiers
+		SoldierFieldsStart(501),
+		SoldierFieldsEnd(600),
+		SoldierAdvertisingField(500),
+		SoldierTargetingStart(601),
+		SoldierTargetingEnd(700),
+		
+		// Enemy locations
+		
+		EnemyLocationsStart(401),
+		EnemyLocationsEnd(449),
+		BroadcastLocationsStart(450),
+		BroadcastLocationsEnd(499)		
 		;
 		
 		private final int channel;
@@ -158,10 +171,14 @@ public abstract class Robot {
     		for (int i = 0; i < nearbyRobots.length; i++) {
     			// Find empty location
     			lastLocationIndex = findEmptyEnemiesLocation(lastLocationIndex);
+    			
+    			
     			if (lastLocationIndex == -1) {
     				// Locations are full, do nothing
     				return;
     			}
+    			
+    			rc.broadcast(lastLocationIndex, BroadcastManager.zipLocation(nearbyRobots[i].getLocation()));
     		}
     	}
     }
@@ -169,12 +186,10 @@ public abstract class Robot {
 	private int findEmptyEnemiesLocation(int lastLocationIndex) throws GameActionException {
 		int index = lastLocationIndex;
 		if (lastLocationIndex == 0) {
-			index = BroadcastManager.ENEMY_LOCATIONS_START;
+			index = (int) BroadcastType.EnemyLocationsStart.getChannel();
 		}
 			
-		
-		
-		for (; index < BroadcastManager.ENEMY_LOCATIONS_END; index++) {
+		for (; index < BroadcastType.EnemyLocationsEnd.getChannel(); index++) {
 			int location = rc.readBroadcast(index);
 			if (location == 0) { // empty
 				return index;
@@ -183,8 +198,4 @@ public abstract class Robot {
 		
 		return -1;
 	}
-    
-    
-	
-	
 }

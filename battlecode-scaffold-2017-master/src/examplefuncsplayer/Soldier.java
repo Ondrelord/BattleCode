@@ -9,6 +9,7 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.Team;
+import examplefuncsplayer.Robot.BroadcastType;
 
 public class Soldier extends Robot{
 
@@ -137,13 +138,13 @@ public class Soldier extends Robot{
         else {
         	// Check if our group is full and stop advertising if we are advertising
         	int groupCount = rc.readBroadcast(groupIndex);
-        	int advertisingGroup = rc.readBroadcast(BroadcastManager.SOLDIER_ADVERTISING_FIELD);
+        	int advertisingGroup = rc.readBroadcast( BroadcastType.SoldierAdvertisingField.getChannel());
         	
         	if (groupCount == GROUP_SIZE) {
         		// Check if we are advertising and stop it.
         		
         		if (advertisingGroup == groupIndex) {
-        			rc.broadcast(BroadcastManager.SOLDIER_ADVERTISING_FIELD, 0);
+        			rc.broadcast( BroadcastType.SoldierAdvertisingField.getChannel(), 0);
         			System.out.println("Stopped advertising.");
         		}
         	}                	
@@ -169,8 +170,8 @@ public class Soldier extends Robot{
 
 
 	private MapLocation getSeenEnemyLocation() throws GameActionException {
-		for (int i = BroadcastManager.ENEMY_LOCATIONS_START; 
-				i < BroadcastManager.ENEMY_LOCATIONS_END;
+		for (int i =  BroadcastType.EnemyLocationsStart.getChannel(); 
+				i <  BroadcastType.EnemyLocationsEnd.getChannel();
 				i++) {
 			int num = rc.readBroadcast(i);
 			
@@ -184,7 +185,7 @@ public class Soldier extends Robot{
 	
 	private MapLocation getBroadcastingEnemyLocation() throws GameActionException {
 		Random rnd = new Random();
-		int i =rnd.nextInt(BroadcastManager.ENEMY_LOCATIONS_BROADCAST_END - BroadcastManager.ENEMY_LOCATIONS_BROADCAST_START);
+		int i =rnd.nextInt( BroadcastType.BroadcastLocationsEnd.getChannel() -  BroadcastType.BroadcastLocationsStart.getChannel());
 		
 		int num = rc.readBroadcast(i);
 		
@@ -197,7 +198,7 @@ public class Soldier extends Robot{
 
 
 	private int calculateTargetingIndex() {
-		return BroadcastManager.SOLDIER_TARGETING_START + (groupIndex - BroadcastManager.SOLDIER_FIELDS_START);
+		return  BroadcastType.SoldierTargetingStart.getChannel() + (groupIndex -  BroadcastType.SoldierFieldsStart.getChannel());
 	}
 
 
@@ -250,7 +251,7 @@ public class Soldier extends Robot{
 		System.out.println("Creating new group with index: " + groupIndex);
 		
 		// Start advertising
-		rc.broadcast(BroadcastManager.SOLDIER_ADVERTISING_FIELD, groupIndex);
+		rc.broadcast( BroadcastType.SoldierAdvertisingField.getChannel(), groupIndex);
 		rc.broadcast(groupIndex, 1);
 	}
 
@@ -266,7 +267,7 @@ public class Soldier extends Robot{
 			return;
 		}		
 		
-		int advertisingGroup = rc.readBroadcast(BroadcastManager.SOLDIER_ADVERTISING_FIELD);
+		int advertisingGroup = rc.readBroadcast( BroadcastType.SoldierAdvertisingField.getChannel());
 		if (advertisingGroup == 0) {
 			advertise();		
 		} else {
@@ -283,7 +284,7 @@ public class Soldier extends Robot{
 
 
 	private int findEmptyGroupIndex() throws GameActionException {
-		for (int i = BroadcastManager.SOLDIER_FIELDS_START; i < BroadcastManager.SOLDIER_FIELDS_END; i++) {
+		for (int i =  BroadcastType.SoldierFieldsStart.getChannel(); i <  BroadcastType.SoldierFieldsEnd.getChannel(); i++) {
 			int number = rc.readBroadcastInt(i);
 			
 			System.out.println(i + ": " + number);

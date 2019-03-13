@@ -4,7 +4,7 @@ import battlecode.common.MapLocation;
 
 public class BroadcastManager {
 
-	public static final int SOLDIER_FIELDS_START = 501;
+	/*public static final int SOLDIER_FIELDS_START = 501;
 	
 	public static final int SOLDIER_FIELDS_END = 600;
 	
@@ -22,7 +22,7 @@ public class BroadcastManager {
 	
 	public static final int ENEMY_LOCATIONS_BROADCAST_START = 450;
 	
-	public static final int ENEMY_LOCATIONS_BROADCAST_END = 499;
+	public static final int ENEMY_LOCATIONS_BROADCAST_END = 499;*/
 		
 	// Cantor's pairing function
 	// https://en.wikipedia.org/wiki/Pairing_function

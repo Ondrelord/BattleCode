@@ -115,8 +115,8 @@ public class Archon extends Robot
 	}
 
 	private void cleanupSoldierTargets() throws GameActionException {
-		for (int i = BroadcastManager.SOLDIER_TARGETING_START;
-				i < BroadcastManager.SOLDIER_TARGETING_END;
+		for (int i = BroadcastType.SoldierTargetingStart.getChannel();
+				i < BroadcastType.SoldierTargetingEnd.getChannel();
 				i++) {
 						
 			rc.broadcast(i, 0);
@@ -129,8 +129,8 @@ public class Archon extends Robot
 		
 		// For now only allocate protectors, let the rest do what it wants
 		// -> the first group should always go to their archon's position
-		for (int i = BroadcastManager.SOLDIER_TARGETING_START;
-				i < BroadcastManager.SOLDIER_TARGETING_END && count > 0;
+		for (int i = BroadcastType.SoldierTargetingStart.getChannel();
+				i < BroadcastType.SoldierTargetingEnd.getChannel() && count > 0;
 				i++, count--) {
 						
 			rc.broadcast(i, BroadcastManager.zipLocation(rc.getLocation()));
@@ -141,7 +141,7 @@ public class Archon extends Robot
 		RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
 		if (nearbyRobots.length > 0) {
 			// Give all of the soldiers my location
-			for (int i = BroadcastManager.SOLDIER_TARGETING_START; i < BroadcastManager.SOLDIER_TARGETING_END; i++) {
+			for (int i = BroadcastType.SoldierTargetingStart.getChannel(); i < BroadcastType.SoldierTargetingEnd.getChannel(); i++) {
 				//int number = rc.readBroadcast(i);
 				rc.broadcast(i, BroadcastManager.zipLocation(rc.getLocation()));
 			}			
@@ -150,24 +150,24 @@ public class Archon extends Robot
 
 	private void saveBroadcastingEnemiesLocations() throws GameActionException {
 		MapLocation[] broadcastingRobots = rc.senseBroadcastingRobotLocations();
-		int index = BroadcastManager.ENEMY_LOCATIONS_BROADCAST_START;
+		int index = BroadcastType.BroadcastLocationsStart.getChannel();
 		
 		for (MapLocation loc : broadcastingRobots) {
 			rc.broadcast(index, BroadcastManager.zipLocation(loc));
 			
 			index++;
-			if (index > BroadcastManager.ENEMY_LOCATIONS_BROADCAST_END)
+			if (index > BroadcastType.BroadcastLocationsEnd.getChannel())
 				return; // We have wrote what we could
 		}
 	}
 
 	private void cleanupEnemyLocations() throws GameActionException {
-		for (int i = BroadcastManager.ENEMY_LOCATIONS_START; i < BroadcastManager.ENEMY_LOCATIONS_END; i++) {
+		for (int i =  BroadcastType.EnemyLocationsStart.getChannel(); i <  BroadcastType.EnemyLocationsEnd.getChannel(); i++) {
 			//int number = rc.readBroadcast(i);
 			rc.broadcast(i, 0);
 		}
 		
-		for (int i = BroadcastManager.ENEMY_LOCATIONS_BROADCAST_START; i < BroadcastManager.ENEMY_LOCATIONS_BROADCAST_END; i++) {
+		for (int i =  BroadcastType.BroadcastLocationsStart.getChannel(); i <  BroadcastType.BroadcastLocationsEnd.getChannel(); i++) {
 			//int number = rc.readBroadcast(i);
 			rc.broadcast(i, 0);
 		}
@@ -177,7 +177,7 @@ public class Archon extends Robot
 	private void annulateSoldierFields() throws GameActionException {
 		int numberGroups = 0;
 		
-		for (int i = BroadcastManager.SOLDIER_FIELDS_START; i < BroadcastManager.SOLDIER_FIELDS_END; i++) {
+		for (int i = BroadcastType.SoldierFieldsStart.getChannel(); i <  BroadcastType.SoldierFieldsEnd.getChannel(); i++) {
 			int number = rc.readBroadcast(i);
 			if (number > 0)
 				numberGroups++;
