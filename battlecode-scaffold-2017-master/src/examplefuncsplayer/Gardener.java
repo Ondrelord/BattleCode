@@ -102,13 +102,11 @@ public class Gardener extends Robot {
 		System.out.println("Soldier rush count: " + soldierRushCount);
 
 		if (soldierRushCount > 0) {
-			// In a random direction
-			Random rnd = new Random();
-			float i = rnd.nextFloat();
-			Direction dir = new Direction((float) (i * 2 * Math.PI));
-
-			System.out.println("Trying to spawn soldier.");
-
+			// Do not spawn on map, where the agent has trees around when he starts
+			TreeInfo[] nearbyTrees = rc.senseNearbyTrees(-1);
+			if (nearbyTrees.length > 2)
+				return false;
+			
 			if (tryToBuildUnit(RobotType.SOLDIER)) {
 				rc.broadcast(BroadcastType.SpawnSoldierRush.getChannel(), soldierRushCount - 1);
 				System.out.println("Spawning: Rush soldier " + (soldierRushCount - 1) + " left.");

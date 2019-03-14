@@ -20,8 +20,10 @@ public class Soldier extends Robot {
 	public static final int GROUP_SIZE = 4;
 
 	public static final int SOLDIER_FIELDS_INCREASE_PERIOD = 6;
-	
+
 	public static final int DEFAULT_RANDOM_MOVEMENT_TICK = 5;
+
+	public static final int ADVANCED_SHOOTING_STARTING_ROUND = 100;
 
 	protected int groupIndex = -1;
 
@@ -32,9 +34,9 @@ public class Soldier extends Robot {
 	protected MapLocation myLocation = null;
 
 	protected int randomMovementTick = 0;
-	
+
 	protected Direction randomDirection;
-	
+
 	public Soldier(RobotController rc) {
 		super(rc);
 	}
@@ -80,24 +82,27 @@ public class Soldier extends Robot {
 					handleCombat(nearbyRobots);
 
 				} else {
+					// First, avoid gardeners, if possible
+					if (!rc.hasMoved()) {
+						avoidGardeners();
+					}
+					
 					if (groupTarget != null) {
 						// Check if I am on the target allready
 						if (groupTarget.distanceTo(myLocation) < 5) {
 							selectNewGroupTarget();
 						} else {
 							Direction towardsTarget = myLocation.directionTo(groupTarget);
-							if (!rc.hasMoved())
+							if (!rc.hasMoved()) {
 								tryMove(towardsTarget, 10, 17);
+							}
 						}
 					} else {
 						selectNewGroupTarget();
 					}
 				}
 
-				// Avoid gardeners, if possible
-				if (!rc.hasMoved()) {
-					avoidGardeners();
-				}
+
 
 				// If I didn't move, then just explore randomly
 				if (!rc.hasMoved()) {
@@ -107,9 +112,9 @@ public class Soldier extends Robot {
 				// Check for nearby trees and report them back to lumberjack
 				TreeInfo[] trees = rc.senseNearbyTrees(-1);
 				if (trees.length > 0) {
-					this.CallLumberjacks(trees[0].getLocation(), false);
+					processTrees(trees);
 				}
-				
+
 				// Decrease random movement tick;
 				randomMovementTick--;
 
@@ -123,25 +128,40 @@ public class Soldier extends Robot {
 			}
 		}
 	}
-	
+
+	private void processTrees(TreeInfo[] trees) throws GameActionException {
+		TreeInfo closestTree = trees[0];
+		CallLumberjacks(closestTree.getLocation(), false);
+
+		// Try to shake a closest tree
+		if (rc.canShake(closestTree.getID()) && closestTree.getContainedBullets() > 0) {
+			rc.shake(closestTree.getID());
+		}
+
+	}
+
 	protected void doRandomMove() throws GameActionException {
 		if (randomMovementTick <= 0) {
 			randomDirection = randomDirection();
 			randomMovementTick = DEFAULT_RANDOM_MOVEMENT_TICK;
 		}
-		
+
 		tryMove(randomDirection);
 	}
 
 	protected void avoidGardeners() throws GameActionException {
-		RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
+		RobotInfo[] nearbyRobots = rc.senseNearbyRobots(3, rc.getTeam());
 		for (RobotInfo robot : nearbyRobots) {
 			if (robot.getType() == RobotType.GARDENER) {
 				// Found a gardener, move away from him
 
-				float distance = rc.getType().bodyRadius - myLocation.distanceTo(robot.getLocation());
+				float distance = rc.getType().bodyRadius + myLocation.distanceTo(robot.getLocation());
 				MapLocation targetLoc = myLocation.add(myLocation.directionTo(robot.getLocation()).opposite(),
 						distance * 2);
+				
+				if (groupTarget != null) {
+					targetLoc = targetLoc.add(myLocation.directionTo(groupTarget));
+				}
 
 				tryMove(targetLoc, 10, 17);
 
@@ -164,7 +184,7 @@ public class Soldier extends Robot {
 
 		// Rarely we will try to follow some broadcasting target
 		Random rnd = new Random();
-		if (rnd.nextFloat() < 0.01f) {
+		if (rnd.nextFloat() < 0.04f) {
 			// We will choose a target from broadcasting enemies
 			// Again, for now it will again be just the first enemy
 			enemyLocation = getBroadcastingEnemyLocation();
@@ -250,13 +270,20 @@ public class Soldier extends Robot {
 			result = tryMove(dirToTarget);
 		}
 
-		// Try to shoot
-		if (rc.canFirePentadShot() && (enemyType == RobotType.SOLDIER || enemyType == RobotType.TANK)) {
-			rc.firePentadShot(dirToTarget);
-		} else if (rc.canFireTriadShot() && enemyType != RobotType.ARCHON) {
-			rc.fireTriadShot(dirToTarget);
-		} else if (rc.canFireSingleShot()) {
-			rc.fireSingleShot(dirToTarget);
+		if (rc.getRoundNum() > ADVANCED_SHOOTING_STARTING_ROUND) {
+
+			// Try to shoot
+			if (rc.canFirePentadShot() && (enemyType == RobotType.SOLDIER || enemyType == RobotType.TANK)) {
+				rc.firePentadShot(dirToTarget);
+			} else if (rc.canFireTriadShot() && enemyType != RobotType.ARCHON) {
+				rc.fireTriadShot(dirToTarget);
+			} else if (rc.canFireSingleShot()) {
+				rc.fireSingleShot(dirToTarget);
+			}
+		} else {
+			if (rc.canFireSingleShot()) {
+				rc.fireSingleShot(dirToTarget);
+			}
 		}
 
 		return result;

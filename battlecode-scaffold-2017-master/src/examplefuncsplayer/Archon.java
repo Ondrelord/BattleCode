@@ -11,7 +11,7 @@ public class Archon extends Robot {
 	private MapLocation enemyLocation;
 	public static final int SOLDIER_FIELDS_CLEANUP_PERIOD = 5;
 
-	public static final int SOLDIER_TARGETS_CLEANUP_PERIOD = 50;
+	public static final int SOLDIER_TARGETS_CLEANUP_PERIOD = 70;
 
 	public static final int ENEMY_LOCATIONS_CLEANUP_PERIOD = 4;
 
@@ -31,7 +31,6 @@ public class Archon extends Robot {
 		while (true) {
 			// Try/catch blocks stop unhandled exceptions, which cause your robot to explode
 			try {
-				// We decrease soldier fields each 6 seconds
 				if (rc.getRoundNum() % SOLDIER_FIELDS_CLEANUP_PERIOD == 0) {
 					annulateSoldierFields();
 				}
@@ -39,8 +38,8 @@ public class Archon extends Robot {
 				if (rc.getRoundNum() % ENEMY_LOCATIONS_CLEANUP_PERIOD == 0)
 					cleanupEnemyLocations();
 
-				// if (rc.getRoundNum() % SOLDIER_TARGETS_CLEANUP_PERIOD == 0)
-				// cleanupSoldierTargets();
+				if (rc.getRoundNum() % SOLDIER_TARGETS_CLEANUP_PERIOD == 0)
+					cleanupSoldierTargets();
 
 				// If someone is broadcasting, save their locations
 				saveBroadcastingEnemiesLocations();
