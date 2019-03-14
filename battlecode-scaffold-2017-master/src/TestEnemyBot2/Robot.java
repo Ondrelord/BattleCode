@@ -1,4 +1,4 @@
-package examplefuncsplayer;
+package TestEnemyBot2;
 
 import java.util.Random;
 

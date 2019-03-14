@@ -1,4 +1,4 @@
-package examplefuncsplayer;
+package TestEnemyBot2;
 
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;

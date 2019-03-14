@@ -1,7 +1,8 @@
-package examplefuncsplayer;
+package TestEnemyBot2;
 
 import java.util.Random;
 
+import TestEnemyBot2.Robot.BroadcastType;
 import battlecode.common.BulletInfo;
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;
@@ -13,7 +14,6 @@ import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Team;
 import battlecode.common.TreeInfo;
-import examplefuncsplayer.Robot.BroadcastType;
 
 public class Soldier extends Robot {
 
