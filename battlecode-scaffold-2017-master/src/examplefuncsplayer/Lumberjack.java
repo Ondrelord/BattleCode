@@ -1,8 +1,7 @@
 package examplefuncsplayer;
 
 
-import java.util.Random;
-
+import battlecode.common.BulletInfo;
 import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -34,9 +33,12 @@ public class Lumberjack extends Robot{
 	 {
 		 for (int i = startIndex; i<startIndex+100;i++)
 		 {
-			 int id =rc.readBroadcastInt(i);
-			 if (id!=0)
-				return IntToLoc(rc.readBroadcast(i));	 
+			 int intLoc=rc.readBroadcastInt(i);
+			 if (intLoc!=0)
+			{
+				 MapLocation loc = IntToLoc(rc.readBroadcast(i));	
+				 rc.broadcast(i, 0);
+			}
 		 } 
 		 return null;
 	 }
@@ -69,7 +71,24 @@ public class Lumberjack extends Robot{
      {
     	 public void Step() throws GameActionException
     	 {
-    		    silence--; 		 
+    		 silence--;
+    		 BulletInfo[] bullets = bot.rc.senseNearbyBullets();
+    		 for(int i=0;i<bullets.length;i++)
+    		 {
+    			 if (bot.willCollideWithMe(bullets[i]))
+    			 {
+    				BulletInfo b = bullets[i];
+    				Direction left =b.getDir().rotateLeftDegrees(90);
+    				Direction right =b.getDir().rotateRightDegrees(90);
+    				
+    				if (bot.tryMove(left))
+    					return;
+    				if (bot.tryMove(right))
+    					return;
+    				break;
+    			 }
+    		 }
+    		 		 
     		 if (inDanger()) 
     			 return;
     		 
