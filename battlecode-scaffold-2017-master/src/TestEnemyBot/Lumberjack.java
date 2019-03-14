@@ -1,7 +1,5 @@
-package examplefuncsplayer;
+package TestEnemyBot;
 
-
-import battlecode.common.BulletInfo;
 import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -9,7 +7,7 @@ import battlecode.common.GameConstants;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
-
+import battlecode.common.RobotType;
 import battlecode.common.Team;
 import battlecode.common.TreeInfo;
 
@@ -22,42 +20,13 @@ public class Lumberjack extends Robot{
 	State state = new FindTreeS(this);
 	ChopState chopS = new ChopState(this);
 	FindTreeS findTreeS = new FindTreeS(this);
-	GoToState goBackS = new GoToState(this);
+	GoBackState goBackS = new GoBackState(this);
 	WalkState walkS = new WalkState(this);
-    CallState callS = new CallState(this);
-
+    
+    
 	
-	 
-
-	 private MapLocation AnswerToCall(int startIndex) throws GameActionException
-	 {
-
-		 for (int i = startIndex; i<startIndex+100;i++)
-		 {
-			 int intLoc=rc.readBroadcastInt(i);
-			 if (intLoc!=0)
-			{
-				 MapLocation loc = IntToLoc(intLoc);	
-				 if (!rc.canMove(loc))
-					 continue;
-				 if (startIndex==1000)
-				 {
-					 System.out.println("Answer to call"); 
-				 }
-				 else
-				 {
-					 System.out.println("Answer to hint");
-				 }
-
-				 rc.broadcast(i, 0);
-				 return loc;
-			}
-		 } 
-		 return null;
-	 }
-	
-	
-	
+	private final int BroadcastTree =1000;
+	private final int BroadcastSender = 1001;
 	
      void moveToTree(TreeInfo t) throws GameActionException 
     {
@@ -84,44 +53,13 @@ public class Lumberjack extends Robot{
      {
     	 public void Step() throws GameActionException
     	 {
-    		 silence--;
-    		 BulletInfo[] bullets = bot.rc.senseNearbyBullets();
-    		 for(int i=0;i<bullets.length;i++)
-    		 {
-    			 if (bot.willCollideWithMe(bullets[i]))
-    			 {
-    				BulletInfo b = bullets[i];
-    				Direction left =b.getDir().rotateLeftDegrees(90);
-    				Direction right =b.getDir().rotateRightDegrees(90);
-    				
-    				if (bot.tryMove(left))
-    					return;
-    				if (bot.tryMove(right))
-    					return;
-    				break;
-    			 }
-    		 }
-    		 		 
     		 if (inDanger()) 
     			 return;
-    		 
-    		 if (bot.state!=bot.callS)
-    		 {
-    			  MapLocation duty = AnswerToCall(1000);
-    	    		 if (duty!=null)
-    	    		 {
-    	    		  	bot.rc.setIndicatorDot(duty,0,0,0);
-    	    			bot.state=bot.callS;
-    	    			bot.callS.SetLoc(duty);
-    	    			return;
-    	    		 }  		 
-    		 }
-    		
     		 if (bot.rc.getLocation().equals(lastLoc))
     			 holdCounter++;
     		 else
     			 lastLoc = bot.rc.getLocation();
-    		 if (holdCounter>20 && this!= bot.chopS)
+    		 if (holdCounter>20)
     		 {
     			 Direction dir =Robot.randomDirection();
     			 if (bot.rc.canMove(dir))
@@ -143,8 +81,6 @@ public class Lumberjack extends Robot{
     		 this.bot=bot;
     		 lastLoc = bot.rc.getLocation();
     	 }
-    	 
-    	 
     	 private boolean inDanger() throws GameActionException
     	 {
     		 Team enemy = bot.rc.getTeam().opponent();
@@ -153,11 +89,6 @@ public class Lumberjack extends Robot{
                 if(robots.length > 0 && !bot.rc.hasAttacked()) {
                     // Use strike() to hit all nearby robots!
                     bot.rc.strike();
-                    if (silence<=0)
-                    {
-                    	silence=50;
-                    	bot.broadcastAllNearbyEnemies();
-                    }
                     return true;
                 } else {
                     // No close robots, so search for robots within sight radius
@@ -165,16 +96,12 @@ public class Lumberjack extends Robot{
 
                     // If there is a robot, move towards it
                     if(robots.length > 0) {
-                	   if (silence<=0)
-                       {
-                       	silence=50;
-                       	bot.broadcastAllNearbyEnemies();
-                       }
                         MapLocation myLocation = rc.getLocation();
                         MapLocation enemyLocation = robots[0].getLocation();
                         Direction toEnemy = myLocation.directionTo(enemyLocation);
-                        
-                        return tryMove(toEnemy);
+
+                        tryMove(toEnemy);
+                        return true;
                     }
                 }
                 return false;
@@ -184,7 +111,6 @@ public class Lumberjack extends Robot{
     	 protected Lumberjack bot;
     	 private MapLocation lastLoc;
     	 private int holdCounter = 0;
-    	 private int silence=0;
      }
      
      class ChopState extends State 
@@ -198,7 +124,6 @@ public class Lumberjack extends Robot{
     	 {
     		 if (tree!= null && tree.health>0)
     		 {
-    			 bot.rc.setIndicatorDot(tree.getLocation(),50,50,50);
     			 tree = TryChop(tree);
     		 }
     		 else
@@ -211,24 +136,25 @@ public class Lumberjack extends Robot{
 
      }
      
-     class GoToState extends State
+     class GoBackState extends State
      {
 
-		public GoToState(Lumberjack bot) {
+		public GoBackState(Lumberjack bot) {
 			super(bot);
 			MapLocation botLoc= bot.rc.getLocation();
-			loc = botLoc.add(0);			
+			initLoc = botLoc.add(0);			
 		}
     	
 		@Override
 		protected void SubStep() throws GameActionException
 		{
-			bot.rc.setIndicatorDot(loc,255,255,255);
-			if (bot.rc.getLocation().distanceSquaredTo(loc)>15)
-			{					
-				if (tryMove(rc.getLocation().directionTo(loc)))
-					return;
-
+			if (bot.rc.getLocation().distanceSquaredTo(initLoc)>16)
+			{
+				if (bot.rc.canMove(initLoc))
+					{
+						bot.rc.move(initLoc);
+						return;
+					}
 			}
 			else
 			{
@@ -237,24 +163,7 @@ public class Lumberjack extends Robot{
 			}
 			
 		}
-		protected MapLocation loc;
-     }
-     
-     class CallState extends GoToState
-     {
-    	 public CallState(Lumberjack bot)
-    	 {
-    		 super(bot);
-    	 }
-    	 @Override
- 		protected void SubStep() throws GameActionException
- 		{
-    		 super.SubStep();
- 		}
-    	 public void SetLoc(MapLocation loc)
-    	 {
-    		 this.loc=loc;
-    	 }
+		private MapLocation initLoc;
      }
      
      class WalkState extends State
@@ -265,16 +174,7 @@ public class Lumberjack extends Robot{
 		
 		@Override
 		protected void SubStep() throws GameActionException
-		{					
-			MapLocation loc = bot.getBroadcastingEnemyLocation();
-			if (loc!=null)
-			{
-				bot.state=bot.callS;
-				bot.callS.loc=loc;
-				return;
-			}
-				
-				
+		{
 			if (StepCounter==0)
 				dir=randomDirection();
 			if (!bot.rc.canMove(dir) || StepCounter>5)
@@ -314,8 +214,8 @@ public class Lumberjack extends Robot{
     	    		}
     	    	}
     	    	return trees[minIndex];
-    	    }    	 
-
+    	    }
+    	 private final int halfInt = 16;
     	 
     	 private boolean SearchTree(TreeInfo[] trees) throws GameActionException
     	 {		
@@ -326,8 +226,12 @@ public class Lumberjack extends Robot{
                 	if (trees.length>3)
                 	{
                 		MapLocation loc = bot.rc.getLocation();
-                		CallLumberjacks(loc, false);	
+                		bot.rc.broadcast(BroadcastSender, bot.rc.getID());
+                		bot.rc.broadcast(BroadcastTree, ((((int)loc.x) << halfInt) + (int)loc.y));
+        				
                 	}
+                	else if (bot.rc.readBroadcast(BroadcastSender)==bot.rc.getID())
+                		bot.rc.broadcast(BroadcastSender, 0);
             		              		
         			
         			if (rc.canChop(closestT.ID))
@@ -366,14 +270,15 @@ public class Lumberjack extends Robot{
     		if (SearchTree(neutralTrees))
     			return;
     		
-    		
-    		if (treePlace == null)
-    			treePlace = bot.AnswerToCall(1100);
-    		
-    		
-    		if ( treePlace!=null)
+    		if (bot.rc.readBroadcast(BroadcastSender)!=0 || treePlace!=null)
     		{
-
+    			if (treePlace == null)
+    			{
+    				int intLoc = bot.rc.readBroadcast(BroadcastTree);
+    				System.out.println("recieved: " +intLoc);
+    				MapLocation loc = new MapLocation(intLoc>>>halfInt, (intLoc <<halfInt)>>>halfInt);
+    				treePlace = loc;
+    			}
     			
     			if (treePlace.distanceSquaredTo(bot.rc.getLocation())>=16)
     				{

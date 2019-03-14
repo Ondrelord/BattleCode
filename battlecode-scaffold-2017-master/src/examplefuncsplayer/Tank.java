@@ -1,76 +1,42 @@
 package examplefuncsplayer;
 
-import battlecode.common.Clock;
 import battlecode.common.Direction;
+import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
-import examplefuncsplayer.Robot.BroadcastType;
+import battlecode.common.RobotType;
 
-public class Tank extends Robot
-{
+public class Tank extends Soldier {
 
-	public Tank(RobotController rc) 
-	{
+	public Tank(RobotController rc) {
 		super(rc);
 	}
 
 	@Override
-	public void run() 
-	{
-		while(true)
-		{
-			try {
-                MapLocation myLocation = rc.getLocation();
+	protected boolean handleCombat(RobotInfo[] nearbyRobots) throws GameActionException {
+		boolean result = false;
 
-                // See if there are any nearby enemy robots
-                RobotInfo[] robots = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+		// Get the closest enemy
+		targetEnemy = getPrioritizedEnemy(nearbyRobots);
+		MapLocation enemyLocation = targetEnemy.getLocation();
+		Direction dirToTarget = myLocation.directionTo(enemyLocation);
+		RobotType enemyType = targetEnemy.getType();
 
-                // If there are some...
-                if (robots.length > 0) 
-                {
-	            	MapLocation enemyLocation = robots[0].getLocation();
-	            	Direction toEnemy = myLocation.directionTo(enemyLocation);
-	            	
-	            	rc.broadcastFloat(BroadcastType.AttackLocationX.getChannel(), enemyLocation.x);
-	            	rc.broadcastFloat(BroadcastType.AttackLocationY.getChannel(), enemyLocation.y);
-	            	
-	            	if(!rc.hasMoved())
-	            		tryMove(toEnemy);
-	            	
-	                // And we have enough bullets, and haven't attacked yet this turn...
-	                if (myLocation.distanceTo(enemyLocation) < 4 && rc.canFireTriadShot()) 
-	                {
-	                    // ...Then fire a bullet in the direction of the enemy.
-	                    rc.fireTriadShot(toEnemy);
-	                } 
-	                else if(rc.canFireSingleShot())
-	                {
-	                	rc.fireSingleShot(toEnemy);
-	                }
-                }
-                else
-                {
-                	MapLocation enemyLocation = new MapLocation(rc.readBroadcastFloat(BroadcastType.AttackLocationX.getChannel()),
-                													rc.readBroadcastFloat(BroadcastType.AttackLocationY.getChannel()));
-                	Direction toEnemy = myLocation.directionTo(enemyLocation);
-                	
-                	if(!rc.hasMoved())
-                		tryMove(toEnemy);
-                }
+		// Lets set the enemy's location as the group's target
+		rc.broadcast(calculateTargetingIndex(), BroadcastManager.zipLocation(enemyLocation));
 
-                // Move randomly
-                if(!rc.hasMoved())
-                	tryMove(randomDirection());
+		result = tryMove(dirToTarget);
 
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
-                Clock.yield();
-
-            } catch (Exception e) {
-                System.out.println("Tank Exception");
-                e.printStackTrace();
-            }
+		// Try to shoot
+		if (rc.canFirePentadShot() && (enemyType == RobotType.SOLDIER || enemyType == RobotType.TANK)) {
+			rc.firePentadShot(dirToTarget);
+		} else if (rc.canFireTriadShot() && enemyType != RobotType.ARCHON) {
+			rc.fireTriadShot(dirToTarget);
+		} else if (rc.canFireSingleShot()) {
+			rc.fireSingleShot(dirToTarget);
 		}
-	}
 
+		return result;
+	}
 }

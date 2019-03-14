@@ -8,38 +8,34 @@ import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.TreeInfo;
 
-public class Scout extends Robot
-{
+public class Scout extends Robot {
 	private MapLocation myLocation;
 	
 	private int state;
 
-	public Scout(RobotController rc) 
-	{
+	public Scout(RobotController rc) {
 		super(rc);
 		state = 0;
 	}
 
 	@Override
-	public void run() 
-	{
-		while (true)
-		{
-			try 
-			{
-			
-				myLocation = rc.getLocation();
-				MapLocation enemyLocation = new MapLocation(rc.readBroadcastFloat(BroadcastType.EnemyArchonLocationX.getChannel()),
-																	rc.readBroadcastFloat(BroadcastType.EnemyArchonLocationY.getChannel()));
+	public void run() {
+		while (true) {
+			try {
 
-				for (RobotInfo robot : rc.senseNearbyRobots())
-				{
-					if (robot != null)
-					{
-						if (robot.getTeam() == rc.getTeam().opponent())
-						{
-							switch(robot.getType())
-							{
+				myLocation = rc.getLocation();
+				MapLocation enemyLocation = new MapLocation(
+						rc.readBroadcastFloat(BroadcastType.EnemyArchonLocationX.getChannel()),
+						rc.readBroadcastFloat(BroadcastType.EnemyArchonLocationY.getChannel()));
+
+				if (rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 0) {
+					broadcastAllNearbyEnemies();
+				}
+
+				for (RobotInfo robot : rc.senseNearbyRobots()) {
+					if (robot != null) {
+						if (robot.getTeam() == rc.getTeam().opponent()) {
+							switch (robot.getType()) {
 							case GARDENER:
 								//if(!rc.hasMoved())
 									//tryMove(myLocation.directionTo(robot.getLocation()));
@@ -48,10 +44,20 @@ public class Scout extends Robot
 									System.out.println("Shooting");
 									if(rc.canFireSingleShot()) rc.fireSingleShot(myLocation.directionTo(robot.getLocation()));
 								}*/
+								System.out.println("Found enemy Gardener");
+								if (!rc.hasMoved())
+									tryMove(myLocation.directionTo(robot.getLocation()));
+								if (myLocation.distanceTo(robot.getLocation()) < 4) {
+									System.out.println("Shooting");
+									if (rc.canFireSingleShot())
+										rc.fireSingleShot(myLocation.directionTo(robot.getLocation()));
+								}
 								break;
 							case ARCHON:
-								rc.broadcastFloat(BroadcastType.EnemyArchonLocationX.getChannel(), robot.getLocation().x);
-								rc.broadcastFloat(BroadcastType.EnemyArchonLocationY.getChannel(), robot.getLocation().y);
+								rc.broadcastFloat(BroadcastType.EnemyArchonLocationX.getChannel(),
+										robot.getLocation().x);
+								rc.broadcastFloat(BroadcastType.EnemyArchonLocationY.getChannel(),
+										robot.getLocation().y);
 								break;
 							default:
 								break;
@@ -78,6 +84,7 @@ public class Scout extends Robot
 				e.printStackTrace();
 			}
 		}
+
 	}
 
 	public void scoutMap()

@@ -2,88 +2,224 @@ package examplefuncsplayer;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
+import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
-import examplefuncsplayer.Robot.BroadcastType;
+import battlecode.common.RobotInfo;
 
-public class Archon extends Robot 
-{
+public class Archon extends Robot {
 	private MapLocation enemyLocation;
+	public static final int SOLDIER_FIELDS_CLEANUP_PERIOD = 5;
 
-	public Archon(RobotController rc) 
-	{
+	public static final int SOLDIER_TARGETS_CLEANUP_PERIOD = 70;
+
+	public static final int ENEMY_LOCATIONS_CLEANUP_PERIOD = 4;
+
+	public static final int ARCHON_PROTECTOR_GROUPS = 1;
+
+	private static final int STARTING_SOLDIER_RUSH_COUNT = 1;
+
+	public Archon(RobotController rc) {
 		super(rc);
 		enemyLocation = rc.getInitialArchonLocations(rc.getTeam().opponent())[0];
 	}
 
 	@Override
-	public void run() 
-	{
-        // The code you want your robot to perform every round should be in this loop
-        while (true) 
-        {
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
-            try 
-            {
-            	int mustHaveGardeners = rc.readBroadcast(BroadcastType.SpawnGardener.getChannel());
-            	
-                // Generate a random direction
-                Direction dir = randomDirection();
+	public void run() {
 
-                // Randomly attempt to build a gardener in this direction
-                
-                if ( Math.random() < .01) 
-                	mustHaveGardeners++;
-                
-            	if (rc.canHireGardener(dir) && mustHaveGardeners > 0)
-            	{
-            		mustHaveGardeners--;
-            		rc.broadcast(BroadcastType.SpawnGardener.getChannel(), mustHaveGardeners);
-                    rc.hireGardener(dir);
-            	}
-
-
-                // Move randomly
-                tryMove(randomDirection());
-
-                // Broadcast archon's location for other robots on the team to know
-                MapLocation myLocation = rc.getLocation();
-                rc.broadcast(0,(int)myLocation.x);
-                rc.broadcast(1,(int)myLocation.y);
-                
-                if(rc.getRoundNum() % 100 == 1)
-                {
-                	rc.broadcastFloat(BroadcastType.AttackLocationX.getChannel(), enemyLocation.x);
-                	rc.broadcastFloat(BroadcastType.AttackLocationY.getChannel(), enemyLocation.y);
-                }
-                
-                if(rc.getRoundNum() == 1)
-                {
-                	rc.broadcastFloat(BroadcastType.EnemyArchonLocationX.getChannel(), enemyLocation.x);
-                	rc.broadcastFloat(BroadcastType.EnemyArchonLocationY.getChannel(), enemyLocation.y);
-                	
-                	rc.broadcast(BroadcastType.SpawnGardener.getChannel(), 3);
-                	rc.broadcast(BroadcastType.SpawnLumberjack.getChannel(), 1);
-                	rc.broadcast(BroadcastType.SpawnScout.getChannel(), 1);
-                }
-                
-                if(rc.getRoundNum() % 10 == 1)
-                	rc.broadcast(BroadcastType.SpawnSoldier.getChannel(), 
-                			rc.readBroadcast(BroadcastType.SpawnSoldier.getChannel()) + 1);
-                
-                if(rc.getTeamBullets() > 500)
-                	rc.donate(rc.getVictoryPointCost());
-
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
-                Clock.yield();
-
-            } catch (Exception e) 
-            {
-                System.out.println("Archon Exception");
-                e.printStackTrace();
-            }
-        }
+		int moveCounter = 15;
+		Direction moveDir = rc.getLocation().directionTo(enemyLocation);
 		
+		// The code you want your robot to perform every round should be in this loop
+		while (true) {
+			// Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+			try {
+				
+				if(moveCounter-- < 0)
+				{
+					moveDir = randomDirection();
+					moveCounter = 15;
+				}
+				
+				// We decrease soldier fields each 6 seconds
+				if (rc.getRoundNum() % SOLDIER_FIELDS_CLEANUP_PERIOD == 0) {
+					annulateSoldierFields();
+				}
+
+				if (rc.getRoundNum() % ENEMY_LOCATIONS_CLEANUP_PERIOD == 0)
+					cleanupEnemyLocations();
+
+				if (rc.getRoundNum() % SOLDIER_TARGETS_CLEANUP_PERIOD == 0)
+					cleanupSoldierTargets();
+
+				// If someone is broadcasting, save their locations
+				saveBroadcastingEnemiesLocations();
+
+				// If we know where the enemy archon is, try to rush him
+				tryToRushEnemy();
+
+				// Check for nearby enemies, alert all of the soldiers if in danger.
+				alertSoldiersIfInDanger();
+
+				// Give orders to soldier groups
+				// giveSoldierOrders();
+
+				int mustHaveGardeners = rc.readBroadcast(BroadcastType.SpawnGardener.getChannel());
+
+				// Generate a random direction
+				Direction dir = randomDirection();
+
+				// Randomly attempt to build a gardener in this direction
+
+				if (rc.getRoundNum() % 20 == 0)
+					mustHaveGardeners++;
+
+				for(int i = 0; i < 360; i += 90)
+				{
+					if (rc.canHireGardener(dir.rotateLeftDegrees(i)) && mustHaveGardeners > 0) {
+					rc.hireGardener(dir.rotateLeftDegrees(i));
+					mustHaveGardeners--;
+					rc.broadcast(BroadcastType.SpawnGardener.getChannel(), mustHaveGardeners);
+					}
+				}
+
+				// Move randomly
+				tryMove(moveDir);
+
+				// Broadcast archon's location for other robots on the team to know
+				MapLocation myLocation = rc.getLocation();
+				rc.broadcast(0, (int) myLocation.x);
+				rc.broadcast(1, (int) myLocation.y);
+
+				if (rc.getRoundNum() % 100 == 1) {
+					rc.broadcastFloat(BroadcastType.AttackLocationX.getChannel(), enemyLocation.x);
+					rc.broadcastFloat(BroadcastType.AttackLocationY.getChannel(), enemyLocation.y);
+				}
+
+				if (rc.getRoundNum() == 1) {
+					rc.broadcastFloat(BroadcastType.EnemyArchonLocationX.getChannel(), enemyLocation.x);
+					rc.broadcastFloat(BroadcastType.EnemyArchonLocationY.getChannel(), enemyLocation.y);
+
+					rc.broadcast(BroadcastType.SpawnGardener.getChannel(), 0);
+					
+					// Set the starting amount of soldiers
+					rc.broadcastInt(BroadcastType.SpawnSoldierRush.getChannel(), STARTING_SOLDIER_RUSH_COUNT);
+
+					rc.broadcast(BroadcastType.SpawnLumberjack.getChannel(), 0);
+					rc.broadcast(BroadcastType.SpawnScout.getChannel(), 1);
+					rc.broadcast(BroadcastType.SpawnTank.getChannel(), 100);
+					
+					if(rc.canHireGardener(myLocation.directionTo(enemyLocation)))
+						rc.hireGardener(myLocation.directionTo(enemyLocation));
+				}
+
+				if (rc.getRoundNum() % 10 == 1)
+					rc.broadcast(BroadcastType.SpawnSoldier.getChannel(),
+							rc.readBroadcast(BroadcastType.SpawnSoldier.getChannel()) + 1);
+
+				if (rc.getTeamBullets() > 500)
+					rc.donate(rc.getVictoryPointCost());
+
+				// Clock.yield() makes the robot wait until the next turn, then it will perform
+				// this loop again
+				Clock.yield();
+
+			} catch (Exception e) {
+				System.out.println("Archon exception");
+				e.printStackTrace();
+			}
+		}
+
+	}
+
+	private void tryToRushEnemy() throws GameActionException {
+		// Rushing locations
+		// Set their target to be enemy archon location (early rush)
+		int enemyArchonInt = rc.readBroadcastInt(BroadcastType.EnemyArchonLocationSingle.getChannel());
+		if (enemyArchonInt == 0) { // No archon found
+			// First group will go to the enemy's spawn
+			rc.broadcast(BroadcastType.SoldierTargetingStart.getChannel(),
+					BroadcastManager.zipLocation(rc.getInitialArchonLocations(rc.getTeam().opponent())[0]));
+		} else {
+			rc.broadcast(BroadcastType.SoldierTargetingStart.getChannel(), enemyArchonInt); // Already zipped
+		}
+	}
+
+	private void cleanupSoldierTargets() throws GameActionException {
+		// Skip the first channel.
+		for (int i = BroadcastType.SoldierTargetingStart.getChannel() + 1; i < BroadcastType.SoldierTargetingEnd
+				.getChannel(); i++) {
+
+			rc.broadcast(i, 0);
+		}
+
+	}
+
+	private void giveSoldierOrders() throws GameActionException {
+		int count = ARCHON_PROTECTOR_GROUPS;
+
+		// For now only allocate protectors, let the rest do what it wants
+		// -> the first group should always go to their archon's position
+		for (int i = BroadcastType.SoldierTargetingStart.getChannel(); i < BroadcastType.SoldierTargetingEnd
+				.getChannel() && count > 0; i++, count--) {
+
+			rc.broadcast(i, BroadcastManager.zipLocation(rc.getLocation()));
+		}
+	}
+
+	private void alertSoldiersIfInDanger() throws GameActionException {
+		RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+		if (nearbyRobots.length > 0) {
+			// Give all of the soldiers my location
+			for (int i = BroadcastType.SoldierTargetingStart.getChannel(); i < BroadcastType.SoldierTargetingEnd
+					.getChannel(); i++) {
+				// int number = rc.readBroadcast(i);
+				rc.broadcast(i, BroadcastManager.zipLocation(rc.getLocation()));
+			}
+		}
+	}
+
+	private void saveBroadcastingEnemiesLocations() throws GameActionException {
+		MapLocation[] broadcastingRobots = rc.senseBroadcastingRobotLocations();
+		int index = BroadcastType.BroadcastLocationsStart.getChannel();
+
+		for (MapLocation loc : broadcastingRobots) {
+			rc.broadcast(index, BroadcastManager.zipLocation(loc));
+
+			index++;
+			if (index > BroadcastType.BroadcastLocationsEnd.getChannel())
+				return; // We have wrote what we could
+		}
+	}
+
+	private void cleanupEnemyLocations() throws GameActionException {
+		for (int i = BroadcastType.EnemyLocationsStart.getChannel(); i < BroadcastType.EnemyLocationsEnd
+				.getChannel(); i++) {
+			// int number = rc.readBroadcast(i);
+			rc.broadcast(i, 0);
+		}
+
+		for (int i = BroadcastType.BroadcastLocationsStart.getChannel(); i < BroadcastType.BroadcastLocationsEnd
+				.getChannel(); i++) {
+			// int number = rc.readBroadcast(i);
+			rc.broadcast(i, 0);
+		}
+
+	}
+
+	private void annulateSoldierFields() throws GameActionException {
+		int numberGroups = 0;
+
+		for (int i = BroadcastType.SoldierFieldsStart.getChannel(); i < BroadcastType.SoldierFieldsEnd
+				.getChannel(); i++) {
+			int number = rc.readBroadcast(i);
+			if (number > 0)
+				numberGroups++;
+
+			rc.broadcast(i, 0);
+		}
+
+		System.out.println("There are: " + numberGroups + " groups.");
 	}
 
 }
