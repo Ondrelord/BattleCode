@@ -31,12 +31,24 @@ public class Lumberjack extends Robot{
 
 	 private MapLocation AnswerToCall(int startIndex) throws GameActionException
 	 {
+
 		 for (int i = startIndex; i<startIndex+100;i++)
 		 {
 			 int intLoc=rc.readBroadcastInt(i);
 			 if (intLoc!=0)
 			{
-				 MapLocation loc = IntToLoc(rc.readBroadcast(i));	
+				 MapLocation loc = IntToLoc(intLoc);	
+				 if (!rc.canMove(loc))
+					 continue;
+				 if (startIndex==1000)
+				 {
+					 System.out.println("Answer to call"); 
+				 }
+				 else
+				 {
+					 System.out.println("Answer to hint");
+				 }
+
 				 rc.broadcast(i, 0);
 				 return loc;
 			}
@@ -93,15 +105,18 @@ public class Lumberjack extends Robot{
     		 if (inDanger()) 
     			 return;
     		 
-    		  MapLocation duty = AnswerToCall(1000);
-    		 if (duty!=null)
+    		 if (bot.state!=bot.callS)
     		 {
-    		  	bot.rc.setIndicatorDot(duty,0,0,0);
-    			bot.state=bot.callS;
-    			bot.callS.SetLoc(duty);
-    			return;
+    			  MapLocation duty = AnswerToCall(1000);
+    	    		 if (duty!=null)
+    	    		 {
+    	    		  	bot.rc.setIndicatorDot(duty,0,0,0);
+    	    			bot.state=bot.callS;
+    	    			bot.callS.SetLoc(duty);
+    	    			return;
+    	    		 }  		 
     		 }
-    		 
+    		
     		 if (bot.rc.getLocation().equals(lastLoc))
     			 holdCounter++;
     		 else
