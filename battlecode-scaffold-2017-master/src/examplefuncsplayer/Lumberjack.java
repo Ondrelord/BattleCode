@@ -38,6 +38,7 @@ public class Lumberjack extends Robot{
 			{
 				 MapLocation loc = IntToLoc(rc.readBroadcast(i));	
 				 rc.broadcast(i, 0);
+				 return loc;
 			}
 		 } 
 		 return null;
