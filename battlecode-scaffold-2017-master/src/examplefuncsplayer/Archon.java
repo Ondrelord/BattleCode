@@ -27,10 +27,20 @@ public class Archon extends Robot {
 	@Override
 	public void run() {
 
+		int moveCounter = 15;
+		Direction moveDir = rc.getLocation().directionTo(enemyLocation);
+		
 		// The code you want your robot to perform every round should be in this loop
 		while (true) {
 			// Try/catch blocks stop unhandled exceptions, which cause your robot to explode
 			try {
+				
+				if(moveCounter-- < 0)
+				{
+					moveDir = randomDirection();
+					moveCounter = 15;
+				}
+				
 				// We decrease soldier fields each 6 seconds
 				if (rc.getRoundNum() % SOLDIER_FIELDS_CLEANUP_PERIOD == 0) {
 					annulateSoldierFields();
@@ -58,17 +68,20 @@ public class Archon extends Robot {
 
 				// Randomly attempt to build a gardener in this direction
 
-				if (Math.random() < .01)
+				if (rc.getRoundNum() % 20 == 0)
 					mustHaveGardeners++;
 
-				if (rc.canHireGardener(dir) && mustHaveGardeners > 0) {
+				for(int i = 0; i < 360; i += 90)
+				{
+					if (rc.canHireGardener(dir.rotateLeftDegrees(i)) && mustHaveGardeners > 0) {
+					rc.hireGardener(dir.rotateLeftDegrees(i));
 					mustHaveGardeners--;
 					rc.broadcast(BroadcastType.SpawnGardener.getChannel(), mustHaveGardeners);
-					rc.hireGardener(dir);
+					}
 				}
 
 				// Move randomly
-				tryMove(randomDirection());
+				tryMove(moveDir);
 
 				// Broadcast archon's location for other robots on the team to know
 				MapLocation myLocation = rc.getLocation();
@@ -84,13 +97,17 @@ public class Archon extends Robot {
 					rc.broadcastFloat(BroadcastType.EnemyArchonLocationX.getChannel(), enemyLocation.x);
 					rc.broadcastFloat(BroadcastType.EnemyArchonLocationY.getChannel(), enemyLocation.y);
 
-					rc.broadcast(BroadcastType.SpawnGardener.getChannel(), 3);
-
+					rc.broadcast(BroadcastType.SpawnGardener.getChannel(), 0);
+					
 					// Set the starting amount of soldiers
 					rc.broadcastInt(BroadcastType.SpawnSoldierRush.getChannel(), STARTING_SOLDIER_RUSH_COUNT);
 
-					rc.broadcast(BroadcastType.SpawnLumberjack.getChannel(), 1);
+					rc.broadcast(BroadcastType.SpawnLumberjack.getChannel(), 0);
 					rc.broadcast(BroadcastType.SpawnScout.getChannel(), 1);
+					rc.broadcast(BroadcastType.SpawnTank.getChannel(), 100);
+					
+					if(rc.canHireGardener(myLocation.directionTo(enemyLocation)))
+						rc.hireGardener(myLocation.directionTo(enemyLocation));
 				}
 
 				if (rc.getRoundNum() % 10 == 1)
