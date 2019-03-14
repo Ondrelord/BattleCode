@@ -380,7 +380,7 @@ public abstract class Robot {
 	}
 	
 	protected void buyBulletsToWin() throws GameActionException {
-		if (rc.getTeamBullets() / rc.getVictoryPointCost() >= GameConstants.VICTORY_POINTS_TO_WIN) {
+		if (rc.getTeamBullets() / rc.getVictoryPointCost() >= (GameConstants.VICTORY_POINTS_TO_WIN - rc.getTeamVictoryPoints())) {
 			rc.donate(rc.getTeamBullets());
 		}
 	}

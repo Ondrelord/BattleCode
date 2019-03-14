@@ -20,6 +20,8 @@ public class Soldier extends Robot {
 	public static final int GROUP_SIZE = 4;
 
 	public static final int SOLDIER_FIELDS_INCREASE_PERIOD = 6;
+	
+	public static final int DEFAULT_RANDOM_MOVEMENT_TICK = 5;
 
 	protected int groupIndex = -1;
 
@@ -29,6 +31,10 @@ public class Soldier extends Robot {
 
 	protected MapLocation myLocation = null;
 
+	protected int randomMovementTick = 0;
+	
+	protected Direction randomDirection;
+	
 	public Soldier(RobotController rc) {
 		super(rc);
 	}
@@ -88,9 +94,24 @@ public class Soldier extends Robot {
 					}
 				}
 
+				// Avoid gardeners, if possible
+				if (!rc.hasMoved()) {
+					avoidGardeners();
+				}
+
 				// If I didn't move, then just explore randomly
-				if (!rc.hasMoved())
-					tryMove(randomDirection());
+				if (!rc.hasMoved()) {
+					doRandomMove();
+				}
+
+				// Check for nearby trees and report them back to lumberjack
+				TreeInfo[] trees = rc.senseNearbyTrees(-1);
+				if (trees.length > 0) {
+					this.CallLumberjacks(trees[0].getLocation(), false);
+				}
+				
+				// Decrease random movement tick;
+				randomMovementTick--;
 
 				// Clock.yield() makes the robot wait until the next turn, then it will perform
 				// this loop again
@@ -99,6 +120,31 @@ public class Soldier extends Robot {
 			} catch (Exception e) {
 				System.out.println("Soldier Exception");
 				e.printStackTrace();
+			}
+		}
+	}
+	
+	protected void doRandomMove() throws GameActionException {
+		if (randomMovementTick <= 0) {
+			randomDirection = randomDirection();
+			randomMovementTick = DEFAULT_RANDOM_MOVEMENT_TICK;
+		}
+		
+		tryMove(randomDirection);
+	}
+
+	protected void avoidGardeners() throws GameActionException {
+		RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
+		for (RobotInfo robot : nearbyRobots) {
+			if (robot.getType() == RobotType.GARDENER) {
+				// Found a gardener, move away from him
+
+				float distance = rc.getType().bodyRadius - myLocation.distanceTo(robot.getLocation());
+				MapLocation targetLoc = myLocation.add(myLocation.directionTo(robot.getLocation()).opposite(),
+						distance * 2);
+
+				tryMove(targetLoc, 10, 17);
+
 			}
 		}
 	}
