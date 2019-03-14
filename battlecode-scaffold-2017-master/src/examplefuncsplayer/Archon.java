@@ -6,7 +6,6 @@ import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
-import battlecode.common.RobotType;
 
 public class Archon extends Robot {
 	private MapLocation enemyLocation;
@@ -28,10 +27,20 @@ public class Archon extends Robot {
 	@Override
 	public void run() {
 
+		int moveCounter = 15;
+		Direction moveDir = rc.getLocation().directionTo(enemyLocation);
+
 		// The code you want your robot to perform every round should be in this loop
 		while (true) {
 			// Try/catch blocks stop unhandled exceptions, which cause your robot to explode
 			try {
+
+				if (moveCounter-- < 0) {
+					moveDir = randomDirection();
+					moveCounter = 15;
+				}
+
+				// We decrease soldier fields each 6 seconds
 				if (rc.getRoundNum() % SOLDIER_FIELDS_CLEANUP_PERIOD == 0) {
 					annulateSoldierFields();
 				}
@@ -59,20 +68,21 @@ public class Archon extends Robot {
 				// Generate a random direction
 				Direction dir = randomDirection();
 
-				
 				// Randomly attempt to build a gardener in this direction
 
-				if (Math.random() < .01)
+				if (rc.getRoundNum() % 20 == 0)
 					mustHaveGardeners++;
 
-				if (rc.canHireGardener(dir) && mustHaveGardeners > 0) {
-					mustHaveGardeners--;
-					rc.broadcast(BroadcastType.SpawnGardener.getChannel(), mustHaveGardeners);
-					rc.hireGardener(dir);
+				for (int i = 0; i < 360; i += 90) {
+					if (rc.canHireGardener(dir.rotateLeftDegrees(i)) && mustHaveGardeners > 0) {
+						rc.hireGardener(dir.rotateLeftDegrees(i));
+						mustHaveGardeners--;
+						rc.broadcast(BroadcastType.SpawnGardener.getChannel(), mustHaveGardeners);
+					}
 				}
 
-				
-				if (avoidEnemies());
+				if (avoidEnemies())
+					;
 				else {
 					// Move randomly
 					tryMove(randomDirection());
@@ -92,13 +102,17 @@ public class Archon extends Robot {
 					rc.broadcastFloat(BroadcastType.EnemyArchonLocationX.getChannel(), enemyLocation.x);
 					rc.broadcastFloat(BroadcastType.EnemyArchonLocationY.getChannel(), enemyLocation.y);
 
-					rc.broadcast(BroadcastType.SpawnGardener.getChannel(), 3);
+					rc.broadcast(BroadcastType.SpawnGardener.getChannel(), 0);
 
 					// Set the starting amount of soldiers
 					rc.broadcastInt(BroadcastType.SpawnSoldierRush.getChannel(), STARTING_SOLDIER_RUSH_COUNT);
 
-					rc.broadcast(BroadcastType.SpawnLumberjack.getChannel(), 1);
+					rc.broadcast(BroadcastType.SpawnLumberjack.getChannel(), 0);
 					rc.broadcast(BroadcastType.SpawnScout.getChannel(), 1);
+					rc.broadcast(BroadcastType.SpawnTank.getChannel(), 100);
+
+					if (rc.canHireGardener(myLocation.directionTo(enemyLocation)))
+						rc.hireGardener(myLocation.directionTo(enemyLocation));
 				}
 
 				if (rc.getRoundNum() % 10 == 1)
@@ -213,12 +227,12 @@ public class Archon extends Robot {
 	protected boolean avoidEnemies() throws GameActionException {
 		RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
 		for (RobotInfo robot : nearbyRobots) {
-			
+
 			// Found a gardener, move away from him
 
 			float distance = rc.getType().bodyRadius + rc.getLocation().distanceTo(robot.getLocation());
-			MapLocation targetLoc = rc.getLocation()
-					.add(rc.getLocation().directionTo(robot.getLocation()).opposite(), distance * 2);
+			MapLocation targetLoc = rc.getLocation().add(rc.getLocation().directionTo(robot.getLocation()).opposite(),
+					distance * 2);
 
 			tryMove(targetLoc, 10, 17);
 			return true;
