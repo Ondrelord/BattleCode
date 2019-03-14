@@ -37,7 +37,7 @@ public class Lumberjack extends Robot{
 			 int intLoc=rc.readBroadcastInt(i);
 			 if (intLoc!=0)
 			{
-				 MapLocation loc = IntToLoc(intLoc);	
+				 MapLocation loc = BroadcastManager.unzipLocation(intLoc);	
 				 if (!rc.canMove(loc))
 					 continue;
 				 if (startIndex==1000)

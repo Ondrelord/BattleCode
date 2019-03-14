@@ -273,7 +273,7 @@ public abstract class Robot {
 
 			int intLoc = rc.readBroadcastInt(i);
 			if (intLoc == 0) {
-				rc.broadcast(i, LocToInt(loc));
+				rc.broadcast(i, BroadcastManager.zipLocation(loc));
 				return;
 			}
 		}
