@@ -188,6 +188,7 @@ public class Lumberjack extends Robot{
 		@Override
 		protected void SubStep() throws GameActionException
 		{
+			bot.rc.setIndicatorDot(loc,255,255,255);
 			if (bot.rc.getLocation().distanceSquaredTo(loc)>15)
 			{					
 				if (tryMove(rc.getLocation().directionTo(loc)))
