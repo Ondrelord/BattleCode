@@ -1,19 +1,13 @@
 package TestEnemyBot2;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
 import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Team;
 import battlecode.common.TreeInfo;
-import playerBot.Robot.BroadcastType;
 
 public class Gardener extends Robot {
 	static int state = 0;
@@ -133,6 +127,9 @@ public class Gardener extends Robot {
 	    				
 	    		}
 			}
+		}
+		catch (Exception e) {
+			
 		}
 	}
 
