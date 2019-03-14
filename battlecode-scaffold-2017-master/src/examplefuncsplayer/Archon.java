@@ -6,6 +6,7 @@ import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
+import battlecode.common.RobotType;
 
 public class Archon extends Robot {
 	private MapLocation enemyLocation;
@@ -58,6 +59,7 @@ public class Archon extends Robot {
 				// Generate a random direction
 				Direction dir = randomDirection();
 
+				
 				// Randomly attempt to build a gardener in this direction
 
 				if (Math.random() < .01)
@@ -69,8 +71,12 @@ public class Archon extends Robot {
 					rc.hireGardener(dir);
 				}
 
-				// Move randomly
-				tryMove(randomDirection());
+				
+				if (avoidEnemies());
+				else {
+					// Move randomly
+					tryMove(randomDirection());
+				}
 
 				// Broadcast archon's location for other robots on the team to know
 				MapLocation myLocation = rc.getLocation();
@@ -202,6 +208,23 @@ public class Archon extends Robot {
 		}
 
 		System.out.println("There are: " + numberGroups + " groups.");
+	}
+
+	protected boolean avoidEnemies() throws GameActionException {
+		RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+		for (RobotInfo robot : nearbyRobots) {
+			
+			// Found a gardener, move away from him
+
+			float distance = rc.getType().bodyRadius + rc.getLocation().distanceTo(robot.getLocation());
+			MapLocation targetLoc = rc.getLocation()
+					.add(rc.getLocation().directionTo(robot.getLocation()).opposite(), distance * 2);
+
+			tryMove(targetLoc, 10, 17);
+			return true;
+
+		}
+		return false;
 	}
 
 }
