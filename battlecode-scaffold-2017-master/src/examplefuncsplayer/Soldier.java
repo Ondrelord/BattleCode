@@ -21,13 +21,13 @@ public class Soldier extends Robot {
 
 	public static final int SOLDIER_FIELDS_INCREASE_PERIOD = 6;
 
-	private int groupIndex = -1;
+	protected int groupIndex = -1;
 
-	private RobotInfo targetEnemy = null;
+	protected RobotInfo targetEnemy = null;
 
-	private MapLocation groupTarget = null;
+	protected MapLocation groupTarget = null;
 
-	private MapLocation myLocation = null;
+	protected MapLocation myLocation = null;
 
 	public Soldier(RobotController rc) {
 		super(rc);
@@ -101,7 +101,7 @@ public class Soldier extends Robot {
 
 	}
 
-	private void selectNewGroupTarget() throws GameActionException {
+	protected void selectNewGroupTarget() throws GameActionException {
 		// Choose some target for the group from the enemies list or from the broadcast
 		// For now lets choose visible enemy, if none exist the one that is broadcasting
 
@@ -130,7 +130,7 @@ public class Soldier extends Robot {
 
 	}
 
-	private void handleGrouping() throws GameActionException {
+	protected void handleGrouping() throws GameActionException {
 		// Look for a group if I don't have one.
 		if (groupIndex == -1) {
 			lookForAGroup();
@@ -158,7 +158,7 @@ public class Soldier extends Robot {
 		}
 	}
 
-	private void updateGroupTarget() throws GameActionException {
+	protected void updateGroupTarget() throws GameActionException {
 		// Update the group's target if I have a group
 		if (groupIndex != -1) {
 			int number = rc.readBroadcast(calculateTargetingIndex());
@@ -168,7 +168,7 @@ public class Soldier extends Robot {
 
 	}
 
-	private MapLocation getSeenEnemyLocation() throws GameActionException {
+	protected MapLocation getSeenEnemyLocation() throws GameActionException {
 		for (int i = BroadcastType.EnemyLocationsStart.getChannel(); i < BroadcastType.EnemyLocationsEnd
 				.getChannel(); i++) {
 			int num = rc.readBroadcast(i);
@@ -182,12 +182,12 @@ public class Soldier extends Robot {
 	}
 
 	
-	private int calculateTargetingIndex() {
+	protected int calculateTargetingIndex() {
 		return BroadcastType.SoldierTargetingStart.getChannel()
 				+ (groupIndex - BroadcastType.SoldierFieldsStart.getChannel());
 	}
 
-	private boolean handleCombat(RobotInfo[] nearbyRobots) throws GameActionException {
+	protected boolean handleCombat(RobotInfo[] nearbyRobots) throws GameActionException {
 		boolean result = false;
 
 		// Get the closest enemy
@@ -199,8 +199,7 @@ public class Soldier extends Robot {
 		// Lets set the enemy's location as the group's target
 		rc.broadcast(calculateTargetingIndex(), BroadcastManager.zipLocation(enemyLocation));
 
-		// TODO: Check for trees here
-		if (!dodge()) {
+		if (!dodge(myLocation)) {
 			result = tryMove(dirToTarget);
 		}
 
@@ -216,12 +215,13 @@ public class Soldier extends Robot {
 		return result;
 	}
 
-	private RobotInfo getPrioritizedEnemy(RobotInfo[] nearestRobots) {
+	protected RobotInfo getPrioritizedEnemy(RobotInfo[] nearestRobots) {
 		RobotInfo target = null;
 
 		RobotType targetType = null;
 		float targetDist = rc.getType().sensorRadius + 1;
 		int targetPriority = getSoldierTargetPriority(targetType);
+		
 		// Find target with most priority
 		for (RobotInfo rb : nearestRobots) {
 			RobotType rbType = rb.type;
@@ -240,7 +240,7 @@ public class Soldier extends Robot {
 		return target;
 	}
 
-	private int getSoldierTargetPriority(RobotType targetType) {
+	protected int getSoldierTargetPriority(RobotType targetType) {
 		if (targetType == null)
 			return -1;
 
@@ -250,106 +250,20 @@ public class Soldier extends Robot {
 		case GARDENER:
 			return 6;
 		case LUMBERJACK:
-			return 4;
+			return 3;
 		case SOLDIER:
 			return 5;
 		case SCOUT:
 			return 2;
 		case TANK:
-			return 3;
+			return 4;
 		}
 		return -1;
 
 	}
 
-	private boolean dodge() throws GameActionException {
-		// Initialize the target location, we do not move by default
-		MapLocation targetLoc = myLocation;
 
-		// Sense radius using body size, speed and speed of fastest bullet (tank)
-		float MAX_SENSE_RANGE = rc.getType().bodyRadius + rc.getType().strideRadius + RobotType.TANK.bulletSpeed;
-
-		// Get the nearby bullets
-		BulletInfo[] nearbyBullets = rc.senseNearbyBullets(MAX_SENSE_RANGE);
-		if (nearbyBullets.length > 0) {
-			for (BulletInfo bullet : nearbyBullets) {
-				Direction bulletDir = bullet.dir;
-
-				// Calculate next bullet location
-				MapLocation p1 = bullet.location;
-				MapLocation p2 = p1.add(bulletDir, bullet.speed);
-
-				float xDiff = p2.x - p1.x;
-				float yDiff = p2.y - p1.y;
-
-				// Calculate smallest vector between intended loc and bullet trajectory
-				float distance = (float) (Math
-						.abs((yDiff * targetLoc.x) - (xDiff * targetLoc.y) + (p2.x * p1.y) - (p2.y * p1.x))
-						/ Math.sqrt((yDiff * yDiff) + (xDiff * xDiff)));
-
-				Direction dir;
-				if (bulletDir.degreesBetween(p1.directionTo(targetLoc)) > 0) {
-					dir = bulletDir.rotateLeftDegrees(90);
-				} else {
-					dir = bulletDir.rotateRightDegrees(90);
-				}
-
-				distance = Math.max(0, rc.getType().bodyRadius - distance);
-
-				targetLoc = targetLoc.add(dir, distance);
-			}
-		}
-
-		// Avoid lumberjacks
-		// If we are in his strike radius, we move away from him
-		RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-		if (nearbyEnemyRobots.length > 0) {
-			for (RobotInfo enemyRobot : nearbyEnemyRobots) {
-				if (enemyRobot.getType() == RobotType.LUMBERJACK && MapLocation.doCirclesCollide(targetLoc,
-						rc.getType().bodyRadius, enemyRobot.location, GameConstants.LUMBERJACK_STRIKE_RADIUS)) {
-					float distance = rc.getType().bodyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS
-							- targetLoc.distanceTo(enemyRobot.location);
-					targetLoc = targetLoc.add(targetLoc.directionTo(enemyRobot.location).opposite(), distance * 2);
-				}
-			}
-		}
-
-		// Not dodging
-		if (targetLoc.equals(myLocation)) {
-			// Check if there is a tree blocking the view of a target enemy
-			TreeInfo[] nearbyTrees = rc.senseNearbyTrees(MAX_SENSE_RANGE);
-			if (nearbyTrees.length > 0) {
-				TreeInfo closestTree = nearbyTrees[0];
-				MapLocation closestTreeLocation = closestTree.getLocation();
-
-				// If tree blocks the projectiles, move to the closer end
-				if (intersects(myLocation, targetEnemy.getLocation(), closestTree.getLocation(),
-						closestTree.getRadius())) {
-
-					Direction toLeft = myLocation.directionTo(closestTreeLocation).rotateLeftDegrees(90);
-					Direction toRight = myLocation.directionTo(closestTreeLocation).rotateRightDegrees(90);
-
-					if (closestTreeLocation.add(toRight).distanceTo(myLocation) < closestTreeLocation.add(toLeft)
-							.distanceTo(myLocation)) {
-						// Move to the right
-						return tryMove(myLocation.add(toRight, rc.getType().strideRadius), 10, 17);
-
-					} else {
-						return tryMove(myLocation.add(toLeft, rc.getType().strideRadius), 10, 17);
-					}
-				}
-			}
-		}
-
-		// Only move if there's actually stuff to dodge.
-		if (!targetLoc.equals(myLocation)) {
-			return tryMove(targetLoc, 10, 17);
-		}
-
-		return false;
-	}
-
-	public static boolean intersects(MapLocation pointA, MapLocation pointB, MapLocation center, double radius) {
+	protected boolean intersects(MapLocation pointA, MapLocation pointB, MapLocation center, double radius) {
 		double baX = pointB.x - pointA.x;
 		double baY = pointB.y - pointA.y;
 		double caX = center.x - pointA.x;
@@ -370,7 +284,7 @@ public class Soldier extends Robot {
 		return true;
 	}
 
-	private void increaseSoldierField() throws GameActionException {
+	protected void increaseSoldierField() throws GameActionException {
 		if (groupIndex == -1)
 			return;
 
@@ -380,7 +294,7 @@ public class Soldier extends Robot {
 
 	}
 
-	private void advertise() throws GameActionException {
+	protected void advertise() throws GameActionException {
 		// Advertise only if it is not the turn when the Archon annuls the fields
 		// Or the turn when we increment the fields
 		if (rc.getRoundNum() % Archon.SOLDIER_FIELDS_CLEANUP_PERIOD == 0
@@ -403,7 +317,7 @@ public class Soldier extends Robot {
 		rc.broadcast(groupIndex, 1);
 	}
 
-	private void lookForAGroup() throws GameActionException {
+	protected void lookForAGroup() throws GameActionException {
 		// I don't have a group and I will try to get one, or start advertising my own
 		System.out.println("Looking for a group.");
 
@@ -429,7 +343,7 @@ public class Soldier extends Robot {
 		}
 	}
 
-	private int findEmptyGroupIndex() throws GameActionException {
+	protected int findEmptyGroupIndex() throws GameActionException {
 		for (int i = BroadcastType.SoldierFieldsStart.getChannel(); i < BroadcastType.SoldierFieldsEnd
 				.getChannel(); i++) {
 			int number = rc.readBroadcastInt(i);

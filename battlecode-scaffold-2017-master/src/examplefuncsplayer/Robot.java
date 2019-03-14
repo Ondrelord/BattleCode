@@ -5,11 +5,12 @@ import java.util.Random;
 import battlecode.common.BulletInfo;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
+import battlecode.common.GameConstants;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
-
+import battlecode.common.TreeInfo;
 
 public abstract class Robot {
 
@@ -26,37 +27,20 @@ public abstract class Robot {
 
 	public static enum BroadcastType {
 		// Locations
-		AllyArchonLocationX(0),
-		AllyArchonLocationY(1),
-		EnemyArchonLocationX(2),
-		EnemyArchonLocationY(3),
-		AttackLocationX(4), 
-		AttackLocationY(5),
-		RegroupLocationX(6),
-		RegroupLocationY(7),
+		AllyArchonLocationX(0), AllyArchonLocationY(1), EnemyArchonLocationX(2), EnemyArchonLocationY(
+				3), AttackLocationX(4), AttackLocationY(5), RegroupLocationX(6), RegroupLocationY(7),
 
 		// Spawning Broadcast
-		SpawnGardener(10),
-		SpawnLumberjack(11),
-		SpawnSoldier(12),
-		SpawnTank(13),
-		SpawnScout(14),
-		SpawnSoldierRush(15),
+		SpawnGardener(10), SpawnLumberjack(11), SpawnSoldier(12), SpawnTank(13), SpawnScout(14), SpawnSoldierRush(15),
 
 		// Soldiers
-		SoldierFieldsStart(501),
-		SoldierFieldsEnd(600),
-		SoldierAdvertisingField(500),
-		SoldierTargetingStart(601),
-		SoldierTargetingEnd(700),
+		SoldierFieldsStart(501), SoldierFieldsEnd(600), SoldierAdvertisingField(500), SoldierTargetingStart(
+				601), SoldierTargetingEnd(700),
 
 		// Enemy locations
 
-		EnemyLocationsStart(401),
-		EnemyLocationsEnd(449),
-		BroadcastLocationsStart(450),
-		BroadcastLocationsEnd(499),
-		EnemyArchonLocationSingle(400);
+		EnemyLocationsStart(401), EnemyLocationsEnd(449), BroadcastLocationsStart(450), BroadcastLocationsEnd(
+				499), EnemyArchonLocationSingle(400);
 
 		private final int channel;
 
@@ -71,11 +55,12 @@ public abstract class Robot {
 
 	protected void checkForArchon(RobotInfo rb) throws GameActionException {
 		if (rb.getType() == RobotType.ARCHON) {
-			rc.broadcast(BroadcastType.EnemyArchonLocationSingle.getChannel(), BroadcastManager.zipLocation(rb.getLocation()));
+			rc.broadcast(BroadcastType.EnemyArchonLocationSingle.getChannel(),
+					BroadcastManager.zipLocation(rb.getLocation()));
 		}
-		
+
 	}
-	
+
 	/**
 	 * Returns a random Direction
 	 * 
@@ -89,7 +74,8 @@ public abstract class Robot {
 	 * Attempts to move in a given direction, while avoiding small obstacles
 	 * directly in the path.
 	 *
-	 * @param dir The intended direction of movement
+	 * @param dir
+	 *            The intended direction of movement
 	 * @return true if a move was performed
 	 * @throws GameActionException
 	 */
@@ -102,7 +88,8 @@ public abstract class Robot {
 	 * bullet is on a collision course with the current robot. Doesn't take into
 	 * account objects between the bullet and this robot.
 	 *
-	 * @param bullet The bullet in question
+	 * @param bullet
+	 *            The bullet in question
 	 * @return True if the line of the bullet's path intersects with this robot's
 	 *         current position.
 	 */
@@ -144,8 +131,7 @@ public abstract class Robot {
 			for (int i = 0; i < nearbyRobots.length; i++) {
 				// Check if it isn't an archon and share it's location if it is.
 				checkForArchon(nearbyRobots[i]);
-				
-				
+
 				// Find empty location
 				lastLocationIndex = findEmptyEnemiesLocation(lastLocationIndex);
 
@@ -174,6 +160,7 @@ public abstract class Robot {
 
 		return -1;
 	}
+
 	protected MapLocation getBroadcastingEnemyLocation() throws GameActionException {
 		Random rnd = new Random();
 		int i = rnd.nextInt(
@@ -188,15 +175,17 @@ public abstract class Robot {
 		}
 	}
 
-
 	/**
 	 * Attempts to move in a given direction, while avoiding small obstacles
 	 * direction in the path.
 	 *
-	 * @param dir           The intended direction of movement
-	 * @param degreeOffset  Spacing between checked directions (degrees)
-	 * @param checksPerSide Number of extra directions checked on each side, if
-	 *                      intended direction was unavailable
+	 * @param dir
+	 *            The intended direction of movement
+	 * @param degreeOffset
+	 *            Spacing between checked directions (degrees)
+	 * @param checksPerSide
+	 *            Number of extra directions checked on each side, if intended
+	 *            direction was unavailable
 	 * @return true if a move was performed
 	 * @throws GameActionException
 	 */
@@ -263,51 +252,131 @@ public abstract class Robot {
 		// A move never happened, so return false.
 		return false;
 	}
-	
-	/*
-	 * Calls one lumberjack to the location. One lumberjack will be send per request. 
-	 * 
-	 * @param loc			The location where you need a lumberjack.
-	 * @param inNecessary	Is this request urgent or it is only hit where trees can be found.
-	 */
-	 protected void CallLumberjacks(MapLocation loc, boolean isNecessary) throws GameActionException
-	 { 		 
-		 int startIndex;
-		 if (isNecessary)
-			 startIndex=1000;
-		 else 
-			 startIndex =1100;
-		 
-		 
-		 for (int i = startIndex; i<startIndex+100;i++)
-		 {
-			 
-			 int intLoc =rc.readBroadcastInt(i);
-			 if (intLoc==0)
-			 {
-				rc.broadcast(i, LocToInt(loc));
-				return ;
-			 }
-		 } 
-		 Random rnd = new Random();
-		 int index = startIndex+ rnd.nextInt(100);
-		 rc.broadcast(index, LocToInt(loc));
-		 
-		 return;
-	 }
-	 
-	 protected int LocToInt(MapLocation loc)
-	 {
-		 return (((int)loc.x) << 16) + (int)loc.y;
-	 }
-	 
-	 
-	 protected MapLocation IntToLoc(int loc)
-	 {
-		return new MapLocation(loc>>>16, (loc <<16)>>>16);
-	 }
-	 
-	 
 
-	 
+	/*
+	 * Calls one lumberjack to the location. One lumberjack will be send per
+	 * request.
+	 * 
+	 * @param loc The location where you need a lumberjack.
+	 * 
+	 * @param inNecessary Is this request urgent or it is only hit where trees can
+	 * be found.
+	 */
+	protected void CallLumberjacks(MapLocation loc, boolean isNecessary) throws GameActionException {
+		int startIndex;
+		if (isNecessary)
+			startIndex = 1000;
+		else
+			startIndex = 1100;
+
+		for (int i = startIndex; i < startIndex + 100; i++) {
+
+			int intLoc = rc.readBroadcastInt(i);
+			if (intLoc == 0) {
+				rc.broadcast(i, LocToInt(loc));
+				return;
+			}
+		}
+		Random rnd = new Random();
+		int index = startIndex + rnd.nextInt(100);
+		rc.broadcast(index, LocToInt(loc));
+
+		return;
+	}
+
+	protected int LocToInt(MapLocation loc) {
+		return (((int) loc.x) << 16) + (int) loc.y;
+	}
+
+	protected MapLocation IntToLoc(int loc) {
+		return new MapLocation(loc >>> 16, (loc << 16) >>> 16);
+	}
+
+	protected boolean dodge(MapLocation myLocation) throws GameActionException {
+		// Initialize the target location, we do not move by default
+		MapLocation targetLoc = myLocation;
+
+		// Sense radius using body size, speed and speed of fastest bullet (tank)
+		float MAX_SENSE_RANGE = rc.getType().bodyRadius + rc.getType().strideRadius + RobotType.TANK.bulletSpeed;
+
+		// Get the nearby bullets
+		BulletInfo[] nearbyBullets = rc.senseNearbyBullets(MAX_SENSE_RANGE);
+		if (nearbyBullets.length > 0) {
+			for (BulletInfo bullet : nearbyBullets) {
+				Direction bulletDir = bullet.dir;
+
+				// Calculate next bullet location
+				MapLocation p1 = bullet.location;
+				MapLocation p2 = p1.add(bulletDir, bullet.speed);
+
+				float xDiff = p2.x - p1.x;
+				float yDiff = p2.y - p1.y;
+
+				// Calculate smallest vector between intended loc and bullet trajectory
+				float distance = (float) (Math
+						.abs((yDiff * targetLoc.x) - (xDiff * targetLoc.y) + (p2.x * p1.y) - (p2.y * p1.x))
+						/ Math.sqrt((yDiff * yDiff) + (xDiff * xDiff)));
+
+				Direction dir;
+				if (bulletDir.degreesBetween(p1.directionTo(targetLoc)) > 0) {
+					dir = bulletDir.rotateLeftDegrees(90);
+				} else {
+					dir = bulletDir.rotateRightDegrees(90);
+				}
+
+				distance = Math.max(0, rc.getType().bodyRadius - distance);
+
+				targetLoc = targetLoc.add(dir, distance);
+			}
+		}
+
+		// Avoid lumberjacks
+		// If we are in his strike radius, we move away from him
+		RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+		if (nearbyEnemyRobots.length > 0) {
+			for (RobotInfo enemyRobot : nearbyEnemyRobots) {
+				if (enemyRobot.getType() == RobotType.LUMBERJACK && MapLocation.doCirclesCollide(targetLoc,
+						rc.getType().bodyRadius, enemyRobot.location, GameConstants.LUMBERJACK_STRIKE_RADIUS)) {
+					float distance = rc.getType().bodyRadius + GameConstants.LUMBERJACK_STRIKE_RADIUS
+							- targetLoc.distanceTo(enemyRobot.location);
+					targetLoc = targetLoc.add(targetLoc.directionTo(enemyRobot.location).opposite(), distance * 2);
+				}
+			}
+		}
+
+		// Not dodging
+		/*if (targetLoc.equals(myLocation)) {
+			// Check if there is a tree blocking the view of a target enemy
+			TreeInfo[] nearbyTrees = rc.senseNearbyTrees(MAX_SENSE_RANGE);
+			if (nearbyTrees.length > 0) {
+				TreeInfo closestTree = nearbyTrees[0];
+				MapLocation closestTreeLocation = closestTree.getLocation();
+
+				// If tree blocks the projectiles, move to the closer end
+				if (intersects(myLocation, targetEnemy.getLocation(), closestTree.getLocation(),
+						closestTree.getRadius())) {
+
+					Direction toLeft = myLocation.directionTo(closestTreeLocation).rotateLeftDegrees(90);
+					Direction toRight = myLocation.directionTo(closestTreeLocation).rotateRightDegrees(90);
+
+					if (closestTreeLocation.add(toRight).distanceTo(myLocation) < closestTreeLocation.add(toLeft)
+							.distanceTo(myLocation)) {
+						// Move to the right
+						return tryMove(myLocation.add(toRight, rc.getType().strideRadius), 10, 17);
+
+					} else {
+						return tryMove(myLocation.add(toLeft, rc.getType().strideRadius), 10, 17);
+					}
+				}
+			}
+		}*/
+
+		// Only move if there's actually stuff to dodge.
+		if (!targetLoc.equals(myLocation)) {
+			return tryMove(targetLoc, 10, 17);
+		}
+
+		return false;
+	}
+
 }
