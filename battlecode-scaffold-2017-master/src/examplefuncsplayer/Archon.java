@@ -44,7 +44,10 @@ public class Archon extends Robot {
 
 				// If someone is broadcasting, save their locations
 				saveBroadcastingEnemiesLocations();
-
+				
+				// If we know where the enemy archon is, try to rush him
+				tryToRushEnemy();
+				
 				// Check for nearby enemies, alert all of the soldiers if in danger.
 				alertSoldiersIfInDanger();
 
@@ -97,14 +100,7 @@ public class Archon extends Robot {
 					rc.broadcast(BroadcastType.SpawnSoldier.getChannel(),
 							rc.readBroadcast(BroadcastType.SpawnSoldier.getChannel()) + 1);
 
-				// Rushing locations
-				// Set their target to be enemy archon location (early rush)
-				int enemyArchonInt = rc.readBroadcastInt(BroadcastType.EnemyArchonLocationSingle.getChannel());
-				if (enemyArchonInt == 0) { // No archon found
-					// First group will go to the enemy's spawn
-					rc.broadcast(BroadcastType.SoldierTargetingStart.getChannel(),
-							BroadcastManager.zipLocation(rc.getInitialArchonLocations(rc.getTeam().opponent())[0]));
-				}
+				
 
 				else {
 					rc.broadcast(BroadcastType.SoldierTargetingStart.getChannel(), enemyArchonInt); // Already zipped
@@ -123,6 +119,17 @@ public class Archon extends Robot {
 			}
 		}
 
+	}
+
+	private void tryToRushEnemy() throws GameActionException {
+		// Rushing locations
+		// Set their target to be enemy archon location (early rush)
+		int enemyArchonInt = rc.readBroadcastInt(BroadcastType.EnemyArchonLocationSingle.getChannel());
+		if (enemyArchonInt == 0) { // No archon found
+			// First group will go to the enemy's spawn
+			rc.broadcast(BroadcastType.SoldierTargetingStart.getChannel(),
+					BroadcastManager.zipLocation(rc.getInitialArchonLocations(rc.getTeam().opponent())[0]));
+		}		
 	}
 
 	private void cleanupSoldierTargets() throws GameActionException {

@@ -41,6 +41,9 @@ public class Soldier extends Robot {
 			try {
 				myLocation = rc.getLocation();
 
+				// Try to buy bullets to win
+				buyBulletsToWin();
+
 				// We increase soldier fields each 5 seconds
 				if (rc.getRoundNum() % SOLDIER_FIELDS_INCREASE_PERIOD == 0) {
 					increaseSoldierField();
@@ -98,7 +101,6 @@ public class Soldier extends Robot {
 				e.printStackTrace();
 			}
 		}
-
 	}
 
 	protected void selectNewGroupTarget() throws GameActionException {
@@ -181,7 +183,6 @@ public class Soldier extends Robot {
 		return null;
 	}
 
-	
 	protected int calculateTargetingIndex() {
 		return BroadcastType.SoldierTargetingStart.getChannel()
 				+ (groupIndex - BroadcastType.SoldierFieldsStart.getChannel());
@@ -221,7 +222,7 @@ public class Soldier extends Robot {
 		RobotType targetType = null;
 		float targetDist = rc.getType().sensorRadius + 1;
 		int targetPriority = getSoldierTargetPriority(targetType);
-		
+
 		// Find target with most priority
 		for (RobotInfo rb : nearestRobots) {
 			RobotType rbType = rb.type;
@@ -261,7 +262,6 @@ public class Soldier extends Robot {
 		return -1;
 
 	}
-
 
 	protected boolean intersects(MapLocation pointA, MapLocation pointB, MapLocation center, double radius) {
 		double baX = pointB.x - pointA.x;
